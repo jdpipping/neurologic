@@ -58,9 +58,9 @@ head(tbi_2011_2012)
 head(tbi_2013_2014)
 
 
-##################
-### MERGE DATA ###
-##################
+###################
+### MERGE YEARS ###
+###################
 
 # DEMOGRAPHICS #
 
@@ -118,13 +118,31 @@ tbi_data = bind_rows(tbi_2011_2012, tbi_2013_2014)
 head(tbi_data)
 
 
+######################
+### MASTER DATASET ###
+######################
+
+# merge all components
+master_data <- demo_data |>
+  # health insurance (100% overlap)
+  left_join(hiq_data, by = c("SEQN", "year")) |>
+  # healthcare utilization (100% overlap)
+  left_join(huq_data, by = c("SEQN", "year")) |>
+  # stroke data (20+, 96% overlap)
+  left_join(stroke_data, by = c("SEQN", "year")) |>
+  # tbi data (40+, 37% overlap)
+  left_join(tbi_data, by = c("SEQN", "year"))
+
 #################
 ### SAVE DATA ###
 #################
 
-# save to file
+# save individual datasets to file
 write_csv(demo_data, "data/clean/demo_data.csv")
 write_csv(hiq_data, "data/clean/hiq_data.csv")
 write_csv(huq_data, "data/clean/huq_data.csv")
 write_csv(stroke_data, "data/clean/stroke_data.csv")
 write_csv(tbi_data, "data/clean/tbi_data.csv")
+
+# save master dataset to file
+write_csv(master_data, "data/clean/master_data.csv")
