@@ -64,7 +64,7 @@ This study utilizes data from the **National Health and Nutrition Examination Su
 ```
 .
 ├── code/
-│   └── read.R
+│   └── data-prep.R
 ├── data/
 │   ├── clean/
 │   └── nhanes/
