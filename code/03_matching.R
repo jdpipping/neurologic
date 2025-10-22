@@ -1,0 +1,191 @@
+################
+### PACKAGES ###
+################
+
+# install.packages(c("cobalt", "iTOS", "MatchIt", "tableone"))
+library(cobalt)
+library(iTOS)
+library(MatchIt)
+library(readr)
+library(tableone)
+library(tidyverse)
+
+#################
+### LOAD DATA ###
+#################
+
+# load master dataset with exposure variables (from 02_explore.R)
+matching_data = read_csv("data/clean/matching_data.csv")
+
+# check data structure
+glimpse(matching_data)
+cat("Total participants:", nrow(matching_data), "\n")
+
+# verify exposure variables exist
+cat("TBI exposure distribution:\n")
+print(table(matching_data$tbi_exposed, useNA = "ifany"))
+cat("\nStroke exposure distribution:\n")
+print(table(matching_data$stroke_exposed, useNA = "ifany"))
+
+##########################
+### MATCHING VARIABLES ###
+##########################
+
+# define matching variables using original variable names and missingness indicators
+missingness_vars = c("RIDAGEYR_missing", "RIAGENDR_missing", "RIDRETH3_missing", "INDFMIN2_missing", "DMDEDUC2_missing")
+existing_missingness_vars = missingness_vars[missingness_vars %in% names(matching_data)]
+
+# Base matching variables (now imputed)
+base_matching_vars = c("RIDAGEYR", "RIAGENDR", "RIDRETH3", "INDFMIN2", "DMDEDUC2")
+
+# Combine base variables with existing missingness indicators
+matching_vars = c(base_matching_vars, existing_missingness_vars)
+
+cat("Matching variables:", paste(matching_vars, collapse = ", "), "\n")
+
+# create matching formula
+match_formula_stroke = as.formula(paste("stroke_exposed ~", 
+                                        paste(matching_vars, collapse = " + ")))
+match_formula_tbi = as.formula(paste("tbi_exposed ~", 
+                                      paste(matching_vars, collapse = " + ")))
+
+#######################
+### STROKE MATCHING ###
+#######################
+
+cat("\n=== STROKE vs CONTROLS MATCHING ===\n")
+
+# create stroke dataset (stroke patients vs stroke controls)
+stroke_data = matching_data |>
+  filter(!is.na(stroke_exposed))
+
+cat("Stroke dataset:", nrow(stroke_data), "participants\n")
+cat("Stroke patients:", sum(stroke_data$stroke_exposed == 1), "\n")
+cat("Controls:", sum(stroke_data$stroke_exposed == 0), "\n")
+
+# perform matching for different ratios
+stroke_matches = list()
+
+for (ratio in c(1, 2, 3, 4)) {
+  cat("\n--- Stroke 1 :", ratio, "matching ---\n")
+  
+  # perform matching
+  match_obj = matchit(match_formula_stroke,
+                      data = stroke_data,
+                      method = "optimal",
+                      ratio = ratio)
+  
+  # store results
+  stroke_matches[[paste0("stroke_1_", ratio)]] = match_obj
+  
+  # extract matched data
+  matched_data = match.data(match_obj)
+  
+  cat("Matched sample size:", nrow(matched_data), "\n")
+  cat("Treated:", sum(matched_data$stroke_exposed == 1), "\n")
+  cat("Controls:", sum(matched_data$stroke_exposed == 0), "\n")
+}
+
+####################
+### TBI MATCHING ###
+####################
+
+cat("\n=== TBI vs CONTROLS MATCHING ===\n")
+
+# create TBI dataset (TBI patients vs TBI controls)
+tbi_data = matching_data |>
+  filter(!is.na(tbi_exposed))
+
+cat("TBI dataset:", nrow(tbi_data), "participants\n")
+cat("TBI patients:", sum(tbi_data$tbi_exposed == 1), "\n")
+cat("Controls:", sum(tbi_data$tbi_exposed == 0), "\n")
+
+# perform matching for different ratios
+tbi_matches = list()
+
+for (ratio in c(1, 2, 3, 4)) {
+  cat("\n--- TBI 1 :", ratio, "matching ---\n")
+  
+  # perform matching
+  match_obj = matchit(match_formula_tbi,
+                      data = tbi_data,
+                      method = "optimal",
+                      ratio = ratio)
+  
+  # store results
+  tbi_matches[[paste0("tbi_1_", ratio)]] = match_obj
+  
+  # extract matched data
+  matched_data = match.data(match_obj)
+  
+  cat("Matched sample size:", nrow(matched_data), "\n")
+  cat("Treated:", sum(matched_data$tbi_exposed == 1), "\n")
+  cat("Controls:", sum(matched_data$tbi_exposed == 0), "\n")
+}
+
+###########################
+### BALANCE DIAGNOSTICS ###
+###########################
+
+cat("\n=== BALANCE DIAGNOSTICS ===\n")
+
+# function to run all balance diagnostics
+run_balance_diagnostics = function(match_obj, match_name) {
+  cat("\n---", match_name, "---\n")
+  
+  # 1. standardized mean differences (SMD)
+  smd_results = bal.tab(match_obj, binary = "std")
+  print(smd_results)
+  
+  # 2. love plot
+  love_plot = love.plot(match_obj, binary = "std", 
+                        title = paste("Balance Plot:", match_name))
+  print(love_plot)
+
+  # 3. concise SMD summary across thresholds
+  bal_df = as.data.frame(smd_results$Balance)
+  # cobalt names SMD-after column variably; try common possibilities
+  smd_after_cols = intersect(colnames(bal_df), c("Diff.Adj", "Std.Diff.Adj", "M.Adj"))
+  if (length(smd_after_cols) == 0) {
+    warning("Could not find SMD-after column in balance table; skipping summary")
+    return(invisible(NULL))
+  }
+  smd_after = abs(bal_df[[smd_after_cols[1]]])
+  thr = c(0.05, 0.10, 0.20)
+  counts_below = sapply(thr, function(t) sum(smd_after < t, na.rm = TRUE))
+  max_smd = suppressWarnings(max(smd_after, na.rm = TRUE))
+  pct_over_0_1 = mean(smd_after > 0.10, na.rm = TRUE)
+
+  cat("SMD summary -> <0.05:", counts_below[1], ", <0.10:", counts_below[2], ", <0.20:", counts_below[3], "\n")
+  cat("Max SMD:", round(max_smd, 3), "; % covariates > 0.10:", round(100*pct_over_0_1, 1), "%\n")
+}
+
+# run diagnostics for all stroke matches
+for (i in seq_along(stroke_matches)) {
+  run_balance_diagnostics(stroke_matches[[i]], names(stroke_matches)[i])
+}
+
+# run diagnostics for all TBI matches  
+for (i in seq_along(tbi_matches)) {
+  run_balance_diagnostics(tbi_matches[[i]], names(tbi_matches)[i])
+}
+
+############################
+### SAVE MATCHED SAMPLES ###
+############################
+
+# save best matched samples (you'll choose based on balance diagnostics)
+# example: save 1:2 stroke match and 1:1 TBI match
+
+# stroke 1:2 match
+stroke_1_2_data = match.data(stroke_matches$stroke_1_2)
+write_csv(stroke_1_2_data, "data/clean/stroke_matched_1_2.csv")
+
+# TBI 1:1 match  
+tbi_1_1_data = match.data(tbi_matches$tbi_1_1)
+write_csv(tbi_1_1_data, "data/clean/tbi_matched_1_1.csv")
+
+cat("\n=== MATCHING COMPLETE ===\n")
+cat("Best stroke match saved: stroke_matched_1_2.csv\n")
+cat("Best TBI match saved: tbi_matched_1_1.csv\n")
+cat("Review balance diagnostics to select optimal ratios\n")
