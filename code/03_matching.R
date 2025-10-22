@@ -152,11 +152,11 @@ run_balance_diagnostics = function(match_obj, match_name) {
   }
   smd_after = abs(bal_df[[smd_after_cols[1]]])
   thr = c(0.05, 0.10, 0.20)
-  counts_below = sapply(thr, function(t) sum(smd_after < t, na.rm = TRUE))
+  counts_over = sapply(thr, function(t) sum(smd_after > t, na.rm = TRUE))
   max_smd = suppressWarnings(max(smd_after, na.rm = TRUE))
   pct_over_0_1 = mean(smd_after > 0.10, na.rm = TRUE)
 
-  cat("SMD summary -> <0.05:", counts_below[1], ", <0.10:", counts_below[2], ", <0.20:", counts_below[3], "\n")
+  cat("SMD violations -> >0.05:", counts_over[1], ", >0.10:", counts_over[2], ", >0.20:", counts_over[3], "\n")
   cat("Max SMD:", round(max_smd, 3), "; % covariates > 0.10:", round(100*pct_over_0_1, 1), "%\n")
 }
 
@@ -174,18 +174,13 @@ for (i in seq_along(tbi_matches)) {
 ### SAVE MATCHED SAMPLES ###
 ############################
 
-# save best matched samples (you'll choose based on balance diagnostics)
-# example: save 1:2 stroke match and 1:1 TBI match
-
-# stroke 1:2 match
-stroke_1_2_data = match.data(stroke_matches$stroke_1_2)
-write_csv(stroke_1_2_data, "data/clean/stroke_matched_1_2.csv")
-
-# TBI 1:1 match  
-tbi_1_1_data = match.data(tbi_matches$tbi_1_1)
-write_csv(tbi_1_1_data, "data/clean/tbi_matched_1_1.csv")
+# save best matched samples
+stroke_1_4_data = match.data(stroke_matches$stroke_1_2)
+write_csv(stroke_1_4_data, "data/matched/stroke_1_4.csv")
+tbi_1_4_data = match.data(tbi_matches$tbi_1_4)
+write_csv(tbi_1_4_data, "data/matched/tbi_1_4.csv")
 
 cat("\n=== MATCHING COMPLETE ===\n")
-cat("Best stroke match saved: stroke_matched_1_2.csv\n")
-cat("Best TBI match saved: tbi_matched_1_1.csv\n")
+cat("Best stroke match saved: stroke_matched_1_4.csv\n")
+cat("Best TBI match saved: tbi_matched_1_4.csv\n")
 cat("Review balance diagnostics to select optimal ratios\n")
