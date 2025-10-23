@@ -32,13 +32,13 @@ print(table(matching_data$stroke_exposed, useNA = "ifany"))
 ##########################
 
 # define matching variables using original variable names and missingness indicators
-missingness_vars = c("RIDAGEYR_missing", "RIAGENDR_missing", "RIDRETH3_missing", "INDFMIN2_missing", "DMDEDUC2_missing")
+missingness_vars = c("RIDAGEYR_missing", "RIAGENDR_missing", "RIDRETH3_missing", "INDFMPIR_missing", "DMDEDUC2_missing")
 existing_missingness_vars = missingness_vars[missingness_vars %in% names(matching_data)]
 
-# Base matching variables (now imputed)
-base_matching_vars = c("RIDAGEYR", "RIAGENDR", "RIDRETH3", "INDFMIN2", "DMDEDUC2")
+# base matching variables
+base_matching_vars = c("RIDAGEYR", "RIAGENDR", "RIDRETH3", "INDFMPIR", "DMDEDUC2")
 
-# Combine base variables with existing missingness indicators
+# combine base variables with existing missingness indicators
 matching_vars = c(base_matching_vars, existing_missingness_vars)
 
 cat("Matching variables:", paste(matching_vars, collapse = ", "), "\n")
@@ -55,7 +55,7 @@ match_formula_tbi = as.formula(paste("tbi_exposed ~",
 
 cat("\n=== STROKE vs CONTROLS MATCHING ===\n")
 
-# create stroke dataset (stroke patients vs stroke controls)
+# create stroke dataset
 stroke_data = matching_data |>
   filter(!is.na(stroke_exposed))
 
@@ -66,7 +66,7 @@ cat("Controls:", sum(stroke_data$stroke_exposed == 0), "\n")
 # perform matching for different ratios
 stroke_matches = list()
 
-for (ratio in c(1, 2, 3, 4)) {
+for (ratio in 1:6) {
   cat("\n--- Stroke 1 :", ratio, "matching ---\n")
   
   # perform matching
@@ -92,7 +92,7 @@ for (ratio in c(1, 2, 3, 4)) {
 
 cat("\n=== TBI vs CONTROLS MATCHING ===\n")
 
-# create TBI dataset (TBI patients vs TBI controls)
+# create TBI dataset
 tbi_data = matching_data |>
   filter(!is.na(tbi_exposed))
 
@@ -103,7 +103,7 @@ cat("Controls:", sum(tbi_data$tbi_exposed == 0), "\n")
 # perform matching for different ratios
 tbi_matches = list()
 
-for (ratio in c(1, 2, 3, 4)) {
+for (ratio in 1:6) {
   cat("\n--- TBI 1 :", ratio, "matching ---\n")
   
   # perform matching
@@ -141,6 +141,9 @@ run_balance_diagnostics = function(match_obj, match_name) {
   love_plot = love.plot(match_obj, binary = "std", 
                         title = paste("Balance Plot:", match_name))
   print(love_plot)
+  # save love plot to file
+  out_plot_path = file.path("plots", paste0("love_", match_name, ".png"))
+  ggsave(out_plot_path, love_plot, width = 8, height = 6, dpi = 300)
 
   # 3. concise SMD summary across thresholds
   bal_df = as.data.frame(smd_results$Balance)
@@ -174,13 +177,20 @@ for (i in seq_along(tbi_matches)) {
 ### SAVE MATCHED SAMPLES ###
 ############################
 
-# save best matched samples
-stroke_1_4_data = match.data(stroke_matches$stroke_1_2)
-write_csv(stroke_1_4_data, "data/matched/stroke_1_4.csv")
-tbi_1_4_data = match.data(tbi_matches$tbi_1_4)
-write_csv(tbi_1_4_data, "data/matched/tbi_1_4.csv")
+# save all stroke matched datasets
+for (nm in names(stroke_matches)) {
+  md = match.data(stroke_matches[[nm]])
+  out_path = file.path("data/matched", paste0(nm, ".csv"))
+  write_csv(md, out_path)
+}
+
+# save all TBI matched datasets
+for (nm in names(tbi_matches)) {
+  md = match.data(tbi_matches[[nm]])
+  out_path = file.path("data/matched", paste0(nm, ".csv"))
+  write_csv(md, out_path)
+}
 
 cat("\n=== MATCHING COMPLETE ===\n")
-cat("Best stroke match saved: stroke_matched_1_4.csv\n")
-cat("Best TBI match saved: tbi_matched_1_4.csv\n")
+cat("Saved all matched datasets to data/matched/ (stroke_1_R and tbi_1_R)\n")
 cat("Review balance diagnostics to select optimal ratios\n")

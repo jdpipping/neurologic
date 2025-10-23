@@ -48,22 +48,10 @@ master_data = master_data |>
 
 # report baseline missingness
 cat("\n=== COVARIATE MISSINGNESS (pre-imputation) ===\n")
-covars_to_check = c("RIDAGEYR", "RIAGENDR", "RIDRETH3", "DMDEDUC2", "INDFMIN2")
+covars_to_check = c("RIDAGEYR", "RIAGENDR", "RIDRETH3", "DMDEDUC2", "INDFMPIR")
 print(sapply(master_data[covars_to_check], function(x) sum(is.na(x))))
 
-# build imputed covariates and missingness indicators (only for variables with missingness)
-master_data = master_data |>
-  mutate(
-    # numeric variables - impute with mean if missing
-    RIDAGEYR = ifelse(is.na(RIDAGEYR), mean(RIDAGEYR, na.rm = TRUE), RIDAGEYR),
-    # Categorical variables - add explicit Missing level if missing
-    RIAGENDR = forcats::fct_explicit_na(factor(RIAGENDR), na_level = "Missing"),
-    RIDRETH3 = forcats::fct_explicit_na(factor(RIDRETH3), na_level = "Missing"),
-    DMDEDUC2 = forcats::fct_explicit_na(factor(DMDEDUC2), na_level = "Missing"),
-    INDFMIN2 = forcats::fct_explicit_na(factor(INDFMIN2), na_level = "Missing")
-  )
-
-# create missingness indicators only for variables that had missing values
+# create missingness indicators BEFORE imputation
 missingness_indicators = list()
 
 # check each variable and create indicator only if it had missingness
@@ -78,6 +66,18 @@ if (length(missingness_indicators) > 0) {
   master_data = master_data |>
     mutate(!!!missingness_indicators)
 }
+
+# now impute missing values
+master_data = master_data |>
+  mutate(
+    # numeric variables - impute with mean if missing
+    RIDAGEYR = ifelse(is.na(RIDAGEYR), mean(RIDAGEYR, na.rm = TRUE), RIDAGEYR),
+    INDFMPIR = ifelse(is.na(INDFMPIR), mean(INDFMPIR, na.rm = TRUE), INDFMPIR),
+    # Categorical variables - add explicit Missing level if missing
+    RIAGENDR = forcats::fct_explicit_na(factor(RIAGENDR), na_level = "Missing"),
+    RIDRETH3 = forcats::fct_explicit_na(factor(RIDRETH3), na_level = "Missing"),
+    DMDEDUC2 = forcats::fct_explicit_na(factor(DMDEDUC2), na_level = "Missing")
+  )
 
 cat("\n=== COVARIATE MISSINGNESS (indicators created) ===\n")
 if (length(missingness_indicators) > 0) {
@@ -115,11 +115,11 @@ cat("TBI control group (no TBI):", sum(master_data$tbi_exposed == 0, na.rm = TRU
 ### CALCULATE RATIOS ###
 ########################
 
-# Calculate treated/control ratios
-stroke_ratio = sum(master_data$stroke_exposed == 1, na.rm = TRUE) / 
-                sum(master_data$stroke_exposed == 0, na.rm = TRUE)
-tbi_ratio = sum(master_data$tbi_exposed == 1, na.rm = TRUE) / 
-             sum(master_data$tbi_exposed == 0, na.rm = TRUE)
+# calculate treated/control ratios
+stroke_ratio = sum(master_data$stroke_exposed == 0, na.rm = TRUE) / 
+                sum(master_data$stroke_exposed == 1, na.rm = TRUE)
+tbi_ratio = sum(master_data$tbi_exposed == 0, na.rm = TRUE) / 
+             sum(master_data$tbi_exposed == 1, na.rm = TRUE)
 
 cat("\n=== TREATED/CONTROL RATIOS ===\n")
 cat("Stroke treated/control ratio:", round(stroke_ratio, 3), "\n")
@@ -134,21 +134,21 @@ cat("\n=== DEMOGRAPHIC CHARACTERISTICS ===\n")
 
 # overall demographics
 overall_demo = CreateTableOne(data = master_data, 
-                               vars = c("RIDAGEYR", "RIAGENDR", "RIDRETH3", "DMDEDUC2", "INDFMIN2"),
-                               factorVars = c("RIAGENDR", "RIDRETH3", "DMDEDUC2", "INDFMIN2"))
+                               vars = c("RIDAGEYR", "RIAGENDR", "RIDRETH3", "DMDEDUC2", "INDFMPIR"),
+                               factorVars = c("RIAGENDR", "RIDRETH3", "DMDEDUC2"))
 print(overall_demo)
 
 # by stroke status
 stroke_demo = CreateTableOne(data = master_data, 
-                            vars = c("RIDAGEYR", "RIAGENDR", "RIDRETH3", "DMDEDUC2", "INDFMIN2"),
-                            factorVars = c("RIAGENDR", "RIDRETH3", "DMDEDUC2", "INDFMIN2"),
+                            vars = c("RIDAGEYR", "RIAGENDR", "RIDRETH3", "DMDEDUC2", "INDFMPIR"),
+                            factorVars = c("RIAGENDR", "RIDRETH3", "DMDEDUC2"),
                             strata = "stroke_exposed")
 print(stroke_demo)
 
 # by tbi status
 tbi_demo = CreateTableOne(data = master_data, 
-                          vars = c("RIDAGEYR", "RIAGENDR", "RIDRETH3", "DMDEDUC2", "INDFMIN2"),
-                          factorVars = c("RIAGENDR", "RIDRETH3", "DMDEDUC2", "INDFMIN2"),
+                          vars = c("RIDAGEYR", "RIAGENDR", "RIDRETH3", "DMDEDUC2", "INDFMPIR"),
+                          factorVars = c("RIAGENDR", "RIDRETH3", "DMDEDUC2"),
                           strata = "tbi_exposed")
 print(tbi_demo)
 
