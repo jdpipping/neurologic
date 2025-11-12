@@ -32,22 +32,40 @@ print(table(matching_data$stroke_exposed, useNA = "ifany"))
 ##########################
 
 # define matching variables using original variable names and missingness indicators
-missingness_vars = c("RIDAGEYR_missing", "RIAGENDR_missing", "RIDRETH3_missing", "INDFMPIR_missing", "DMDEDUC2_missing")
+missingness_vars = c("RIDAGEYR_missing", "RIAGENDR_missing", "RIDRETH3_missing", "INDFMPIR_missing", "DMDEDUC2_missing",
+                     "alcohol_abuse_missing", "smoking_status_missing", "hypertension_missing", 
+                     "diabetes_missing", "stroke_history_missing")
 existing_missingness_vars = missingness_vars[missingness_vars %in% names(matching_data)]
 
-# base matching variables
+# base matching variables (demographics)
 base_matching_vars = c("RIDAGEYR", "RIAGENDR", "RIDRETH3", "INDFMPIR", "DMDEDUC2")
 
-# combine base variables with existing missingness indicators
-matching_vars = c(base_matching_vars, existing_missingness_vars)
+# health outcome matching variables (for both studies)
+health_outcome_vars = c("alcohol_abuse", "smoking_status", "hypertension", "diabetes")
 
-cat("Matching variables:", paste(matching_vars, collapse = ", "), "\n")
+# stroke study: demographics + health outcomes (NO stroke_history since stroke is the exposure)
+stroke_matching_vars = c(base_matching_vars, health_outcome_vars)
+stroke_missingness_vars = existing_missingness_vars[existing_missingness_vars %in% 
+                                                     c(paste0(base_matching_vars, "_missing"),
+                                                       paste0(health_outcome_vars, "_missing"))]
+stroke_matching_vars_all = c(stroke_matching_vars, stroke_missingness_vars)
 
-# create matching formula
+# TBI study: demographics + health outcomes + stroke_history
+tbi_matching_vars = c(base_matching_vars, health_outcome_vars, "stroke_history")
+tbi_missingness_vars = existing_missingness_vars[existing_missingness_vars %in% 
+                                                 c(paste0(base_matching_vars, "_missing"),
+                                                   paste0(health_outcome_vars, "_missing"),
+                                                   "stroke_history_missing")]
+tbi_matching_vars_all = c(tbi_matching_vars, tbi_missingness_vars)
+
+cat("Stroke matching variables:", paste(stroke_matching_vars_all, collapse = ", "), "\n")
+cat("TBI matching variables:", paste(tbi_matching_vars_all, collapse = ", "), "\n")
+
+# create matching formulas
 match_formula_stroke = as.formula(paste("stroke_exposed ~", 
-                                        paste(matching_vars, collapse = " + ")))
+                                        paste(stroke_matching_vars_all, collapse = " + ")))
 match_formula_tbi = as.formula(paste("tbi_exposed ~", 
-                                      paste(matching_vars, collapse = " + ")))
+                                     paste(tbi_matching_vars_all, collapse = " + ")))
 
 #######################
 ### STROKE MATCHING ###

@@ -57,6 +57,42 @@ tbi_2013_2014 = read_xpt("data/nhanes/tbi/CSQ_H.xpt.txt")
 head(tbi_2011_2012)
 head(tbi_2013_2014)
 
+# ALCOHOL #
+
+# load
+alcohol_2011_2012 = read_xpt("data/nhanes/alcohol/ALQ_G.xpt.txt")
+alcohol_2013_2014 = read_xpt("data/nhanes/alcohol/ALQ_H.xpt.txt")
+# preview
+head(alcohol_2011_2012)
+head(alcohol_2013_2014)
+
+# SMOKING #
+
+# load
+smoking_2011_2012 = read_xpt("data/nhanes/smoking/SMQ_G.xpt.txt")
+smoking_2013_2014 = read_xpt("data/nhanes/smoking/SMQ_H.xpt.txt")
+# preview
+head(smoking_2011_2012)
+head(smoking_2013_2014)
+
+# HYPERTENSION #
+
+# load
+hypertension_2011_2012 = read_xpt("data/nhanes/hypertension/BPQ_G.xpt.txt")
+hypertension_2013_2014 = read_xpt("data/nhanes/hypertension/BPQ_H.xpt.txt")
+# preview
+head(hypertension_2011_2012)
+head(hypertension_2013_2014)
+
+# DIABETES #
+
+# load
+diabetes_2011_2012 = read_xpt("data/nhanes/diabetes/DIQ_G.xpt.txt")
+diabetes_2013_2014 = read_xpt("data/nhanes/diabetes/DIQ_H.xpt.txt")
+# preview
+head(diabetes_2011_2012)
+head(diabetes_2013_2014)
+
 
 ###################
 ### MERGE YEARS ###
@@ -117,6 +153,50 @@ tbi_data = bind_rows(tbi_2011_2012, tbi_2013_2014)
 # preview
 head(tbi_data)
 
+# ALCOHOL #
+
+# merge
+alcohol_2011_2012 = alcohol_2011_2012 |>
+  mutate(year = as.factor("2011-2012"))
+alcohol_2013_2014 = alcohol_2013_2014 |>
+  mutate(year = as.factor("2013-2014"))
+alcohol_data = bind_rows(alcohol_2011_2012, alcohol_2013_2014)
+# preview
+head(alcohol_data)
+
+# SMOKING #
+
+# merge
+smoking_2011_2012 = smoking_2011_2012 |>
+  mutate(year = as.factor("2011-2012"))
+smoking_2013_2014 = smoking_2013_2014 |>
+  mutate(year = as.factor("2013-2014"))
+smoking_data = bind_rows(smoking_2011_2012, smoking_2013_2014)
+# preview
+head(smoking_data)
+
+# HYPERTENSION #
+
+# merge
+hypertension_2011_2012 = hypertension_2011_2012 |>
+  mutate(year = as.factor("2011-2012"))
+hypertension_2013_2014 = hypertension_2013_2014 |>
+  mutate(year = as.factor("2013-2014"))
+hypertension_data = bind_rows(hypertension_2011_2012, hypertension_2013_2014)
+# preview
+head(hypertension_data)
+
+# DIABETES #
+
+# merge
+diabetes_2011_2012 = diabetes_2011_2012 |>
+  mutate(year = as.factor("2011-2012"))
+diabetes_2013_2014 = diabetes_2013_2014 |>
+  mutate(year = as.factor("2013-2014"))
+diabetes_data = bind_rows(diabetes_2011_2012, diabetes_2013_2014)
+# preview
+head(diabetes_data)
+
 
 ######################
 ### MASTER DATASET ###
@@ -131,7 +211,12 @@ master_data <- demo_data |>
   # stroke data (20+, 96% overlap)
   left_join(stroke_data, by = c("SEQN", "year")) |>
   # tbi data (40+, 37% overlap)
-  left_join(tbi_data, by = c("SEQN", "year"))
+  left_join(tbi_data, by = c("SEQN", "year")) |>
+  # health outcomes
+  left_join(alcohol_data, by = c("SEQN", "year")) |>
+  left_join(smoking_data, by = c("SEQN", "year")) |>
+  left_join(hypertension_data, by = c("SEQN", "year")) |>
+  left_join(diabetes_data, by = c("SEQN", "year"))
 
 #################
 ### SAVE DATA ###
