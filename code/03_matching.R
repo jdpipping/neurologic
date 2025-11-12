@@ -81,16 +81,47 @@ cat("Stroke dataset:", nrow(stroke_data), "participants\n")
 cat("Stroke patients:", sum(stroke_data$stroke_exposed == 1), "\n")
 cat("Controls:", sum(stroke_data$stroke_exposed == 0), "\n")
 
+# fit propensity score model for stroke
+ps_model_stroke = glm(match_formula_stroke, data = stroke_data, family = binomial)
+stroke_data$ps = predict(ps_model_stroke, type = "response")
+stroke_data$logit_ps = predict(ps_model_stroke, type = "link")
+
+# compute caliper: 0.2 SD of logit(propensity score)
+treated_logit_stroke = stroke_data$logit_ps[stroke_data$stroke_exposed == 1]
+control_logit_stroke = stroke_data$logit_ps[stroke_data$stroke_exposed == 0]
+st_stroke = sd(treated_logit_stroke, na.rm = TRUE)
+sc_stroke = sd(control_logit_stroke, na.rm = TRUE)
+spool_stroke = sqrt((st_stroke^2 + sc_stroke^2) / 2)
+ps_caliper_stroke = 0.2 * spool_stroke
+
+cat("\nStroke PS Caliper (0.2 SD):", round(ps_caliper_stroke, 4), "\n")
+
 # perform matching for different ratios
 stroke_matches = list()
 
 for (ratio in 1:6) {
   cat("\n--- Stroke 1 :", ratio, "matching ---\n")
   
-  # perform matching
+  # create distance matrix: absolute difference in logit(PS)
+  treated_idx = which(stroke_data$stroke_exposed == 1)
+  control_idx = which(stroke_data$stroke_exposed == 0)
+  n_treated = length(treated_idx)
+  n_control = length(control_idx)
+  
+  # compute propensity score distance matrix (vectorized)
+  # distance = absolute difference in logit(PS) between treated and control
+  treated_logit = stroke_data$logit_ps[treated_idx]
+  control_logit = stroke_data$logit_ps[control_idx]
+  ps_dist = abs(outer(treated_logit, control_logit, "-"))
+  
+  # apply caliper penalty: add large value if distance > caliper (prevents matching)
+  ps_dist[ps_dist > ps_caliper_stroke] = ps_dist[ps_dist > ps_caliper_stroke] + 1000
+  
+  # perform optimal matching with custom distance matrix
   match_obj = matchit(match_formula_stroke,
                       data = stroke_data,
                       method = "optimal",
+                      distance = ps_dist,
                       ratio = ratio)
   
   # store results
@@ -99,9 +130,15 @@ for (ratio in 1:6) {
   # extract matched data
   matched_data = match.data(match_obj)
   
+  # check how many treated units were discarded due to caliper
+  n_discarded = n_treated - sum(matched_data$stroke_exposed == 1)
+  
   cat("Matched sample size:", nrow(matched_data), "\n")
   cat("Treated:", sum(matched_data$stroke_exposed == 1), "\n")
   cat("Controls:", sum(matched_data$stroke_exposed == 0), "\n")
+  if (n_discarded > 0) {
+    cat("Treated units discarded (outside caliper):", n_discarded, "\n")
+  }
 }
 
 ####################
@@ -118,16 +155,47 @@ cat("TBI dataset:", nrow(tbi_data), "participants\n")
 cat("TBI patients:", sum(tbi_data$tbi_exposed == 1), "\n")
 cat("Controls:", sum(tbi_data$tbi_exposed == 0), "\n")
 
+# fit propensity score model for TBI
+ps_model_tbi = glm(match_formula_tbi, data = tbi_data, family = binomial)
+tbi_data$ps = predict(ps_model_tbi, type = "response")
+tbi_data$logit_ps = predict(ps_model_tbi, type = "link")
+
+# compute caliper: 0.2 SD of logit(propensity score)
+treated_logit_tbi = tbi_data$logit_ps[tbi_data$tbi_exposed == 1]
+control_logit_tbi = tbi_data$logit_ps[tbi_data$tbi_exposed == 0]
+st_tbi = sd(treated_logit_tbi, na.rm = TRUE)
+sc_tbi = sd(control_logit_tbi, na.rm = TRUE)
+spool_tbi = sqrt((st_tbi^2 + sc_tbi^2) / 2)
+ps_caliper_tbi = 0.2 * spool_tbi
+
+cat("\nTBI PS Caliper (0.2 SD):", round(ps_caliper_tbi, 4), "\n")
+
 # perform matching for different ratios
 tbi_matches = list()
 
 for (ratio in 1:6) {
   cat("\n--- TBI 1 :", ratio, "matching ---\n")
   
-  # perform matching
+  # create distance matrix: absolute difference in logit(PS)
+  treated_idx = which(tbi_data$tbi_exposed == 1)
+  control_idx = which(tbi_data$tbi_exposed == 0)
+  n_treated = length(treated_idx)
+  n_control = length(control_idx)
+  
+  # compute propensity score distance matrix (vectorized)
+  # distance = absolute difference in logit(PS) between treated and control
+  treated_logit = tbi_data$logit_ps[treated_idx]
+  control_logit = tbi_data$logit_ps[control_idx]
+  ps_dist = abs(outer(treated_logit, control_logit, "-"))
+  
+  # apply caliper penalty: add large value if distance > caliper (prevents matching)
+  ps_dist[ps_dist > ps_caliper_tbi] = ps_dist[ps_dist > ps_caliper_tbi] + 1000
+  
+  # perform optimal matching with custom distance matrix
   match_obj = matchit(match_formula_tbi,
                       data = tbi_data,
                       method = "optimal",
+                      distance = ps_dist,
                       ratio = ratio)
   
   # store results
@@ -136,9 +204,15 @@ for (ratio in 1:6) {
   # extract matched data
   matched_data = match.data(match_obj)
   
+  # check how many treated units were discarded due to caliper
+  n_discarded = n_treated - sum(matched_data$tbi_exposed == 1)
+  
   cat("Matched sample size:", nrow(matched_data), "\n")
   cat("Treated:", sum(matched_data$tbi_exposed == 1), "\n")
   cat("Controls:", sum(matched_data$tbi_exposed == 0), "\n")
+  if (n_discarded > 0) {
+    cat("Treated units discarded (outside caliper):", n_discarded, "\n")
+  }
 }
 
 ###########################
