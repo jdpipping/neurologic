@@ -33,7 +33,7 @@ This study utilizes data from the **National Health and Nutrition Examination Su
 - **CSQ (Consumer Survey Questionnaire)**: TBI history and severity
 - Primary exposure variable: "Have you ever had a loss of consciousness because of a head injury?" (Yes/No)
 
-#### 5. **Health Outcomes**
+#### 5. **Health Outcomes for Matching**
 - **Alcohol** (`alcohol/`): ALQ141Q - Number of days with 5+ drinks in past year
 - **Smoking** (`smoking/`): SMQ040 - Current smoking status (every day, some days, not at all)
 - **Hypertension** (`hypertension/`): BPQ020 - Ever told you had hypertension
