@@ -139,26 +139,28 @@ This study utilizes data from the **National Health and Nutrition Examination Su
 
 1. **Define Matching Variables**:
 
-   **Stroke Study (16 variables)**:
+   **Stroke Study (18 variables)**:
    - Demographics (5): RIDAGEYR, RIAGENDR, RIDRETH3, INDFMPIR, DMDEDUC2
+   - NHANES Design Variables (2): SDMVPSU, SDMVSTRA (strata and PSU, included as predictors)
    - NHANES Sample Weight (1): WTINT2YR (interview weights, included as predictor following Dugoff et al.)
    - Health Outcomes (4): alcohol_abuse, smoking_status, hypertension, diabetes
    - Missingness Indicators (6): INDFMPIR_missing, DMDEDUC2_missing, alcohol_abuse_missing, smoking_status_missing, hypertension_missing, diabetes_missing
    - **Excludes**: stroke_history (stroke IS the exposure)
 
-   **TBI Study (18 variables)**:
+   **TBI Study (20 variables)**:
    - Demographics (5): RIDAGEYR, RIAGENDR, RIDRETH3, INDFMPIR, DMDEDUC2
+   - NHANES Design Variables (2): SDMVPSU, SDMVSTRA (strata and PSU, included as predictors)
    - NHANES Sample Weight (1): WTINT2YR (interview weights, included as predictor following Dugoff et al.)
    - Health Outcomes (4): alcohol_abuse, smoking_status, hypertension, diabetes
    - Additional (1): stroke_history (included as confounder)
    - Missingness Indicators (7): All of the above + stroke_history_missing
    - **Includes**: stroke_history (as a confounder/health outcome)
 
-   **Note**: Sample weights (`WTINT2YR`) are included as a predictor in the unweighted logistic regression for propensity score estimation (Dugoff et al., 2014). This approach enhances external validity by accounting for NHANES complex survey design, ensuring matched samples reflect the population structure intended by NHANES.
+   **Note**: Design variables (`SDMVPSU`, `SDMVSTRA`) and sample weights (`WTINT2YR`) are included as predictors in the unweighted logistic regression for propensity score estimation (Dugoff et al., 2014). This approach enhances external validity by accounting for NHANES complex survey design.
 
 2. **Perform Matching**:
    - Method: Optimal matching (greedy algorithm)
-   - Distance: Propensity score (logistic regression with WTINT2YR included as predictor)
+   - Distance: Propensity score (logistic regression with SDMVPSU, SDMVSTRA, and WTINT2YR included as predictors)
    - Caliper: 0.2 SD of logit(propensity score) - manually implemented
      - Propensity score model fitted using logistic regression (includes WTINT2YR)
      - Caliper computed as 0.2 × pooled SD of logit(PS)

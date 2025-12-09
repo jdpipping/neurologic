@@ -40,21 +40,24 @@ existing_missingness_vars = missingness_vars[missingness_vars %in% names(matchin
 # base matching variables (demographics)
 base_matching_vars = c("RIDAGEYR", "RIAGENDR", "RIDRETH3", "INDFMPIR", "DMDEDUC2")
 
+# NHANES design variables (strata and PSU, included as predictors in PS model)
+design_vars = c("SDMVPSU", "SDMVSTRA")
+
 # NHANES sample weight to include in PS model
 sample_weight_var = "WTINT2YR"
 
 # health outcome matching variables (for both studies)
 health_outcome_vars = c("alcohol_abuse", "smoking_status", "hypertension", "diabetes")
 
-# stroke study: demographics + sample weight + health outcomes (NO stroke_history since stroke is the exposure)
-stroke_matching_vars = c(base_matching_vars, sample_weight_var, health_outcome_vars)
+# stroke study: demographics + design vars + sample weight + health outcomes (NO stroke_history since stroke is the exposure)
+stroke_matching_vars = c(base_matching_vars, design_vars, sample_weight_var, health_outcome_vars)
 stroke_missingness_vars = existing_missingness_vars[existing_missingness_vars %in% 
                                                      c(paste0(base_matching_vars, "_missing"),
                                                        paste0(health_outcome_vars, "_missing"))]
 stroke_matching_vars_all = c(stroke_matching_vars, stroke_missingness_vars)
 
-# TBI study: demographics + sample weight + health outcomes + stroke_history
-tbi_matching_vars = c(base_matching_vars, sample_weight_var, health_outcome_vars, "stroke_history")
+# TBI study: demographics + design vars + sample weight + health outcomes + stroke_history
+tbi_matching_vars = c(base_matching_vars, design_vars, sample_weight_var, health_outcome_vars, "stroke_history")
 tbi_missingness_vars = existing_missingness_vars[existing_missingness_vars %in% 
                                                  c(paste0(base_matching_vars, "_missing"),
                                                    paste0(health_outcome_vars, "_missing"),
