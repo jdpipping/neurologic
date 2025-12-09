@@ -139,24 +139,28 @@ This study utilizes data from the **National Health and Nutrition Examination Su
 
 1. **Define Matching Variables**:
 
-   **Stroke Study (15 variables)**:
+   **Stroke Study (16 variables)**:
    - Demographics (5): RIDAGEYR, RIAGENDR, RIDRETH3, INDFMPIR, DMDEDUC2
+   - NHANES Sample Weight (1): WTINT2YR (interview weights, included as predictor following Dugoff et al.)
    - Health Outcomes (4): alcohol_abuse, smoking_status, hypertension, diabetes
    - Missingness Indicators (6): INDFMPIR_missing, DMDEDUC2_missing, alcohol_abuse_missing, smoking_status_missing, hypertension_missing, diabetes_missing
    - **Excludes**: stroke_history (stroke IS the exposure)
 
-   **TBI Study (17 variables)**:
+   **TBI Study (18 variables)**:
    - Demographics (5): RIDAGEYR, RIAGENDR, RIDRETH3, INDFMPIR, DMDEDUC2
+   - NHANES Sample Weight (1): WTINT2YR (interview weights, included as predictor following Dugoff et al.)
    - Health Outcomes (4): alcohol_abuse, smoking_status, hypertension, diabetes
    - Additional (1): stroke_history (included as confounder)
    - Missingness Indicators (7): All of the above + stroke_history_missing
    - **Includes**: stroke_history (as a confounder/health outcome)
 
+   **Note**: Sample weights (`WTINT2YR`) are included as a predictor in the unweighted logistic regression for propensity score estimation (Dugoff et al., 2014). This approach enhances external validity by accounting for NHANES complex survey design, ensuring matched samples reflect the population structure intended by NHANES.
+
 2. **Perform Matching**:
    - Method: Optimal matching (greedy algorithm)
-   - Distance: Propensity score (logistic regression)
+   - Distance: Propensity score (logistic regression with WTINT2YR included as predictor)
    - Caliper: 0.2 SD of logit(propensity score) - manually implemented
-     - Propensity score model fitted using logistic regression
+     - Propensity score model fitted using logistic regression (includes WTINT2YR)
      - Caliper computed as 0.2 × pooled SD of logit(PS)
      - Custom distance matrix created: absolute difference in logit(PS)
      - Penalty (1000) added to distances > caliper (prevents matching)
@@ -184,68 +188,45 @@ This study utilizes data from the **National Health and Nutrition Examination Su
 
 ### Matching Results
 
-**Results with 0.2 SD Caliper (Manual Implementation)**:
+**Results with 0.2 SD Caliper and WTINT2YR included in PS model**:
 
 **Stroke Study**:
 - **Caliper**: 0.2651 SD of logit(propensity score)
-- **1:1**: Max SMD = 0.117, 2 violations > 0.10 (8% covariates > 0.10)
-- **1:2**: Max SMD = 0.090, 0 violations > 0.10 ✓ (2 covariates > 0.05)
-- **1:3**: Max SMD = 0.040, 0 violations > 0.10 ✓ **Excellent balance**
-- **1:4**: Max SMD = 0.046, 0 violations > 0.10 ✓ **Excellent balance**
-- **1:5**: Max SMD = 0.065, 0 violations > 0.10 ✓ (3 covariates > 0.05)
-- **1:6**: Max SMD = 0.084, 0 violations > 0.10 ✓ (7 covariates > 0.05)
+- **1:1**: Max SMD = 0.091, 0 violations > 0.10 ✓ (4 covariates > 0.05)
+- **1:2**: Max SMD = 0.056, 0 violations > 0.10 ✓ (2 covariates > 0.05)
+- **1:3**: Max SMD = 0.039, 0 violations > 0.10 ✓ **Excellent balance**
+- **1:4**: Max SMD = 0.043, 0 violations > 0.10 ✓ **Excellent balance**
+- **1:5**: Max SMD = 0.048, 0 violations > 0.10 ✓ (0 covariates > 0.05)
+- **1:6**: Max SMD = 0.066, 0 violations > 0.10 ✓ (3 covariates > 0.05)
 - **All treated units matched** (no discarded units)
 
 **TBI Study**:
-- **Caliper**: 0.1327 SD of logit(propensity score)
-- **1:1**: Max SMD = 0.055, 0 violations > 0.10 ✓ (1 covariate > 0.05)
-- **1:2**: Max SMD = 0.049, 0 violations > 0.10 ✓ **Excellent balance**
-- **1:3**: Max SMD = 0.054, 0 violations > 0.10 ✓ (1 covariate > 0.05)
-- **1:4**: Max SMD = 0.093, 0 violations > 0.10 ✓ (4 covariates > 0.05)
-- **1:5**: Max SMD = 0.134, 3 violations > 0.10 (11.1% covariates > 0.10) ⚠️
-- **1:6**: Max SMD = 0.162, 5 violations > 0.10 (18.5% covariates > 0.10) ⚠️
+- **Caliper**: 0.139 SD of logit(propensity score)
+- **1:1**: Max SMD = 0.050, 0 violations > 0.10 ✓ (0 covariates > 0.05) **Excellent balance**
+- **1:2**: Max SMD = 0.049, 0 violations > 0.10 ✓ (0 covariates > 0.05) **Excellent balance**
+- **1:3**: Max SMD = 0.060, 0 violations > 0.10 ✓ (2 covariates > 0.05)
+- **1:4**: Max SMD = 0.095, 0 violations > 0.10 ✓ (3 covariates > 0.05)
+- **1:5**: Max SMD = 0.134, 3 violations > 0.10 (10.7% covariates > 0.10) ⚠️
+- **1:6**: Max SMD = 0.179, 6 violations > 0.10 (21.4% covariates > 0.10) ⚠️
 - **All treated units matched** (no discarded units)
 
 **Key Findings**:
 - Caliper implementation successful: All treated units matched without discarding
+- Sample weight (WTINT2YR) included as predictor in PS model (Dugoff et al.)
 - Stroke: Excellent balance achieved at 1:3 and 1:4 ratios (max SMD < 0.05)
-- TBI: Excellent balance achieved at 1:2 ratio (max SMD < 0.05)
+- TBI: Excellent balance achieved at 1:1 and 1:2 ratios (max SMD < 0.05)
 - TBI balance degrades at higher ratios (1:5 and 1:6 exceed 0.10 threshold)
-- Smaller caliper for TBI (0.1327 vs 0.2651 for stroke) reflects less variability in propensity scores
+- Smaller caliper for TBI (0.139 vs 0.2651 for stroke) reflects less variability in propensity scores
 
 **Why TBI Caliper is Smaller**:
-- **TBI has less variability in propensity scores**: Pooled SD = 0.66 (vs 1.33 for stroke)
-  - TBI treated group SD: 0.55 (vs 1.05 for stroke) → More homogeneous treated group
-  - TBI control group SD: 0.76 (vs 1.55 for stroke) → More homogeneous control group
+- **TBI has less variability in propensity scores**: Pooled SD ≈ 0.70 (vs 1.33 for stroke)
+  - TBI treated group SD: ~0.55 (vs ~1.05 for stroke) → More homogeneous treated group
+  - TBI control group SD: ~0.76 (vs ~1.55 for stroke) → More homogeneous control group
 - **Possible reasons**:
   1. TBI treated group is more homogeneous (less variability in matching covariates)
   2. Better model fit for TBI (matching variables explain more variance)
   3. Tighter propensity score distributions (less spread in logit(PS))
 - **Implications**: Smaller caliper = tighter matching constraint, but all treated units still matched successfully, suggesting good overlap despite tighter distributions
-
-### Recommended Matching Ratios
-
-Based on balance diagnostics:
-
-**Stroke Study**:
-- **Recommended**: 1:3 or 1:4 ratio
-  - Both achieve excellent balance (max SMD < 0.05)
-  - All covariates below 0.10 threshold
-  - 1:4 provides more statistical power (larger control group)
-  - 1:3 may be preferred if sample size is a concern
-
-**TBI Study**:
-- **Recommended**: 1:2 or 1:3 ratio
-  - 1:2 achieves excellent balance (max SMD = 0.049)
-  - 1:3 maintains good balance (max SMD = 0.054)
-  - Avoid 1:5 and 1:6 ratios (imbalanced, exceed 0.10 threshold)
-  - Balance degrades at higher ratios due to smaller control pool (6.8:1 ratio)
-
-**Rationale**:
-- Caliper (0.2 SD) ensures matches are within reasonable propensity score distance
-- Higher ratios provide more statistical power but may compromise balance
-- Balance quality depends on overlap between treated and control propensity score distributions
-- TBI has smaller control pool relative to treated units, limiting ability to match at higher ratios
 
 ## Directory Structure
 
