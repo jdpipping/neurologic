@@ -1,0 +1,750 @@
+\documentclass{article}
+\usepackage[hidelinks]{hyperref}
+\usepackage{bookmark}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{booktabs}
+\usepackage[margin=1in]{geometry}
+\usepackage{fancyhdr}
+\usepackage{parskip}
+\usepackage[round]{natbib}
+\bibliographystyle{apalike}
+
+\title{Association of Stroke and Traumatic Brain Injury with Healthcare Access and Utilization in the U.S. Adult Population: A Propensity Score--Matched Analysis of NHANES 2011--2014}
+\author{Mike Baiocchi, Jonathan Pipping, Andrea Schneider, 
+Ashil Srivastava and Dylan Small}
+\date{}
+
+\begin{document}
+
+% Set up running headers and footers
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\leftmark}
+\fancyhead[R]{Protocol}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0pt}
+
+\maketitle
+
+\tableofcontents
+
+\pagebreak
+
+\section{Title and Abstract}
+
+\subsection{Title}
+
+Association of Stroke and Traumatic Brain Injury with Healthcare Access and Utilization in the U.S. Adult Population: A Propensity Score--Matched Analysis of NHANES 2011--2014
+
+\subsection{Abstract}
+
+\textbf{Background:} Traumatic brain injury (TBI) and stroke are common neurologic conditions associated with substantial morbidity and mortality in the United States. Both conditions can have long-term cognitive, functional, and psychosocial consequences that may increase the need for ongoing healthcare. At the same time, barriers to healthcare access and utilization may worsen outcomes among individuals with a history of TBI or stroke.
+
+\textbf{Objectives:} This study will estimate the association between self-reported lifetime history of (1) stroke and (2) traumatic brain injury (TBI) with loss of consciousness and multiple indicators of healthcare access and utilization in a nationally representative sample of U.S. adults.
+
+\textbf{Data and Setting:} We will use data from the 2011--2012 and 2013--2014 cycles of the National Health and Nutrition Examination Survey (NHANES), a complex, multistage probability sample of the noninstitutionalized U.S. civilian population.
+
+\textbf{Design:} This is an observational, cross-sectional study using existing survey data. For each exposure (stroke and TBI), we will construct separate analytic cohorts and estimate propensity scores for exposure as a function of demographic, socioeconomic, health behavior, cardiovascular risk, and survey design variables (strata, primary sampling unit, and interview weights), along with missingness indicators. We will perform optimal $1\!:\!k$ propensity score matching with a caliper of $0.2$ pooled standard deviations on the logit of the propensity score and assess covariate balance using standardized mean differences and graphical diagnostics (love plots).
+
+\textbf{Primary Outcomes:} The primary outcomes are (1) having a usual place to go for healthcare and (2) having any health insurance coverage. Secondary outcomes include type of insurance (public vs.\ private), type of usual source of care, time since last healthcare visit, mental health service use, hospitalizations, and prescription coverage.
+
+\textbf{Analytic Plan:} Within the matched samples, we will estimate the population average treatment effect on the treated (PATT), i.e., the effect among adults with a history of stroke or TBI, using survey-weighted models that incorporate both NHANES sampling weights and the matched design, following the framework of \citet{dugoff2014} for combining propensity score methods with complex survey data.
+
+\textbf{Results and Conclusions:} This document describes the protocol and planned analyses. Numerical results and final conclusions will be added once analyses are completed.
+
+%========================
+\section{Introduction}
+%========================
+
+Traumatic brain injury (TBI) and stroke are major causes of death and disability in the United States. TBI, typically resulting from a bump, blow, or jolt to the head---for example from falls or motor vehicle crashes---ranges in severity from mild concussions to severe injuries causing permanent neurologic impairment. Stroke, caused by interruption of blood flow to the brain (ischemic) or rupture of a cerebral blood vessel (hemorrhagic), similarly leads to significant cognitive and functional impairment and often requires intensive acute and chronic care.
+
+In the United States, hundreds of thousands of adults each year experience stroke, and many die from TBI-related injuries, with many more living with long-term aftereffects. Adequate access to healthcare, including continuous insurance coverage, a usual source of care, and timely primary and specialty services, is likely critical to optimizing outcomes among people with a history of stroke or TBI. Conversely, gaps in insurance coverage, lack of a usual source of care, and delayed or forgone care may exacerbate disability and increase the risk of preventable complications.
+
+Despite the plausibility of a strong link between severe neurologic injury and subsequent healthcare access and utilization, evidence on this association at the population level using nationally representative data with comprehensive covariate adjustment remains limited. While some studies have examined healthcare utilization following stroke or TBI, existing work often relies on single health systems, selected subpopulations (e.g., hospitalized patients), or administrative data that may not simultaneously capture neurologic history, detailed healthcare access measures, and rich demographic and socioeconomic covariates needed for robust causal inference.
+
+The National Health and Nutrition Examination Survey (NHANES) provides an opportunity to address this gap. NHANES is a nationally representative, multistage probability survey of the noninstitutionalized U.S. civilian population that collects standardized information on demographics, health behaviors, chronic conditions, health insurance, and healthcare utilization. In the 2011--2012 and 2013--2014 survey cycles, NHANES asked respondents about lifetime history of stroke and, in adults aged 40 years and older, history of head injury resulting in loss of consciousness.
+
+Using these data, this study will:
+
+\begin{enumerate}
+    \item Quantify how healthcare access and utilization differ between adults with and without a history of stroke and between adults with and without a history of TBI.
+
+    \item Evaluate whether these associations vary across demographic and socioeconomic subgroups (e.g., age, sex, race/ethnicity, education, income).
+
+    \item Implement propensity score methods combined with NHANES survey weights, following \citet{dugoff2014}, to obtain effect estimates that are both adjusted for observed confounding and generalizable to the national target population.
+
+\end{enumerate}
+
+By doing so, the study aims to inform whether individuals with prior stroke or TBI experience systematic differences in access to and use of healthcare services relative to the broader U.S. adult population.
+
+%========================
+\section{Research Question}
+%========================
+
+\subsection{Primary Research Question}
+
+Among noninstitutionalized U.S. adults represented by NHANES 2011--2014, what is the association between self-reported lifetime history of:
+
+\begin{enumerate}
+    \item Stroke, and
+
+    \item Traumatic brain injury (TBI) with loss of consciousness
+
+\end{enumerate}
+
+and multiple indicators of healthcare access and utilization, including having a usual source of care and health insurance coverage?
+
+Formally, for each exposure (stroke, TBI) we seek to estimate the \emph{population average treatment effect on the treated} (PATT)---the difference in healthcare access and utilization outcomes between:
+
+\begin{itemize}
+    \item adults who report a history of stroke (or TBI), and
+
+    \item the same population, had they not experienced stroke (or TBI),
+
+\end{itemize}
+
+generalized to the NHANES target population via survey weighting.
+
+\subsection{Hypotheses}
+
+\textbf{Primary hypotheses}
+
+\begin{itemize}
+    \item Adults with a history of TBI are less likely to have adequate healthcare access and utilization (e.g., less likely to have a usual place for care, more likely to lack coverage or have longer time since last visit).
+
+    \item Adults with a history of stroke are more likely to have healthcare access and utilize healthcare services (e.g., more likely to have a usual source of care and insurance) compared with adults without stroke, reflecting increased contact with the healthcare system after a major vascular event.
+
+\end{itemize}
+
+\textbf{Secondary hypothesis}
+
+\begin{itemize}
+    \item The magnitude and direction of these associations differ across subgroups defined by age, sex, race/ethnicity, education, and income-to-poverty ratio (i.e., effect modification by demographic and socioeconomic characteristics).
+
+\end{itemize}
+
+\subsection{Objectives}
+
+\begin{enumerate}
+    \item Describe healthcare access and utilization indicators among U.S. adults overall and stratified by history of stroke and TBI.
+
+    \item Estimate the association (PATT) between stroke history and each healthcare access/utilization outcome, adjusting for observed confounders using propensity score matching combined with survey design-based analysis.
+
+    \item Estimate the analogous association for TBI.
+
+    \item Explore effect modification by key demographic and socioeconomic variables.
+
+\end{enumerate}
+
+\subsection{Generalization Target}
+
+The target population for inference is the U.S.\ noninstitutionalized civilian population represented by NHANES 2011--2014. Findings are intended to apply to:
+
+\begin{itemize}
+    \item Adults aged $\geq 20$ years for the stroke analysis (the age range for which stroke history was collected), and
+
+    \item Adults aged $\geq 40$ years for the TBI analysis (the age range for which the TBI module was administered).
+
+\end{itemize}
+
+Findings will not generalize to:
+
+\begin{itemize}
+    \item Institutionalized populations (e.g., nursing homes, long-term care facilities),
+
+    \item Active-duty military personnel, or
+
+    \item People experiencing homelessness or others outside the NHANES sampling frame.
+
+\end{itemize}
+
+%========================
+\section{Inclusion and Exclusion Criteria}
+%========================
+
+\subsection{Data Source}
+
+We will construct analytic cohorts from the combined 2011--2012 and 2013--2014 NHANES cycles. These cycles include:
+
+\begin{itemize}
+    \item Demographics (DEMO),
+
+    \item Health insurance and access (HIQ, HUQ),
+
+    \item Medical conditions including stroke (MCQ),
+
+    \item Traumatic brain injury (CSQ; administered to adults $\geq 40$ years),
+
+    \item Alcohol use (ALQ), smoking (SMQ), hypertension (BPQ), and diabetes (DIQ).
+
+\end{itemize}
+
+These components will be merged by respondent identifier (SEQN) and survey cycle.
+
+\subsection{Inclusion Criteria}
+
+We will define separate analytic samples for the stroke and TBI analyses.
+
+\paragraph{Stroke analysis}
+
+\begin{itemize}
+    \item Adults aged $\geq 20$ years at the time of the NHANES examination.
+
+    \item Nonmissing response to the stroke history question (MCQ160F: ``Has a doctor or other health professional ever told you that you had a stroke?'' coded as yes/no).
+
+    \item Nonmissing data on the primary outcomes (usual source of care and health insurance coverage).
+
+    \item Availability of NHANES design variables (strata, primary sampling unit) and interview sampling weights (WTINT2YR).
+
+\end{itemize}
+
+\paragraph{TBI analysis}
+
+\begin{itemize}
+    \item Adults aged $\geq 40$ years (NHANES eligibility for the TBI module).
+
+    \item Nonmissing response to the TBI question (CSQ240: ``Have you ever had loss of consciousness because of a head injury?'' yes/no).
+
+    \item Nonmissing data on the primary outcomes.
+
+    \item Availability of design variables and interview sampling weights.
+
+\end{itemize}
+
+\subsection{Exclusion Criteria}
+
+We will exclude:
+
+\begin{itemize}
+    \item Respondents with missing or indeterminate exposure status (stroke history or TBI),
+
+    \item Respondents missing all primary outcomes,
+
+    \item Respondents without valid sampling weights or design variables required for survey analysis,
+
+    \item Participants outside the age ranges for each analytic cohort (e.g., $<20$ for stroke analysis, $<40$ for TBI analysis).
+
+\end{itemize}
+
+We will not exclude participants solely based on missing covariate values used for propensity score estimation; instead, we will address covariate missingness as described in Section~\ref{sec:design} (missingness indicators and single imputation).
+
+\subsection{Data Counts and Flow}
+
+In the final manuscript, we will report:
+
+\begin{itemize}
+    \item The total number of NHANES participants in 2011--2014,
+
+    \item Counts excluded at each step (e.g., ineligible age, missing exposure, missing outcomes, missing design variables),
+
+    \item Number of exposed and unexposed participants entering the propensity score models, and
+
+    \item Number retained in the matched samples for each exposure.
+
+\end{itemize}
+
+These will be summarized in a CONSORT-style flow diagram, as recommended in observational protocol guidance.
+
+%========================
+\section{Study Outcomes}
+%========================
+
+\subsection{Exposures}
+
+We consider two separate binary exposures, each analyzed in its own matched cohort.
+
+\paragraph{History of stroke}
+
+\begin{itemize}
+    \item Derived from NHANES item MCQ160F (``Ever told you had a stroke?'').
+
+    \item Coded as: $1 = \text{Yes}$ (stroke\_exposed), $0 = \text{No}$.
+
+\end{itemize}
+
+\paragraph{History of traumatic brain injury (TBI)}
+
+\begin{itemize}
+    \item Derived from NHANES item CSQ240 (``Ever had a loss of consciousness because of a head injury?'').
+
+    \item Coded as: $1 = \text{Yes}$ (tbi\_exposed), $0 = \text{No}$.
+
+\end{itemize}
+
+\subsection{Primary Outcomes}
+
+We will define two primary healthcare access outcomes (binary).
+
+\paragraph{Usual place to go for healthcare}
+
+Derived from NHANES item HUQ030 (``Is there a place you usually go when you are sick or need advice about your health?''). Coded as: $1 = \text{Has a usual place}$ (response = 1 or 3), $0 = \text{No usual place}$ (response = 2).
+
+\paragraph{Any health insurance coverage}
+
+Derived from NHANES item HIQ011 (``Are you covered by health insurance or some other kind of health care plan?''). Coded as: $1 = \text{Any coverage}$ (public or private), $0 = \text{Uninsured at the time of interview}$ (response = 2).
+
+These primary outcomes directly reflect core dimensions of healthcare access: having a regular source of care and being insured.
+
+\subsection{Secondary Outcomes}
+
+Secondary outcomes will characterize additional aspects of access and utilization:
+
+\begin{itemize}
+    \item Type of insurance plan (e.g., government vs.\ private coverage among those insured),
+
+    \item Type of usual source of care (e.g., doctor's office/clinic, hospital outpatient clinic, emergency department, other),
+
+    \item Time since last healthcare visit (categorical measure based on HUQ visit timing, e.g., $\leq 6$ months, 6--12 months, $>12$ months),
+
+    \item Mental health service use (visit to a mental health professional in the past year; yes/no),
+
+    \item Hospital utilization (number of overnight hospital stays in the past year, modeled as count or categorized),
+
+    \item Insurance continuity and prescription coverage (any gaps in health insurance in the past year; whether the plan covers prescription medications).
+
+\end{itemize}
+
+All secondary outcomes will be coded in a way that aligns with NHANES public documentation and allows for interpretable contrasts between exposed and unexposed groups.
+
+\subsection{Marginal Distributions and Descriptive Summaries}
+
+Before matching, we will:
+
+\begin{itemize}
+    \item Present weighted marginal distributions (e.g., proportions, means) of all primary and secondary outcomes in the overall sample and stratified by exposure status (stroke/TBI yes/no),
+
+    \item Produce tables and figures (e.g., bar charts, histograms) to describe the distribution of outcomes across survey cycles (2011--2012 vs.\ 2013--2014), consistent with the shell tables.
+
+\end{itemize}
+
+These summaries will provide context for the matched analyses and help assess whether the matched sample remains representative of the target population.
+
+%========================
+\section{Study Design}
+\label{sec:design}
+%========================
+
+\subsection{Overview and Primary Design Features}
+
+This is an observational, cross-sectional study using existing NHANES data to estimate the association between lifetime neurologic injury (stroke, TBI) and healthcare access/utilization. The principal design elements are:
+
+\begin{enumerate}
+    \item Use of a nationally representative complex survey (NHANES) to enable population-level inference.
+
+    \item Propensity score matching to reduce confounding by observed covariates.
+
+    \item Combination of propensity score methods with survey weighting and design-based analysis, following \citet{dugoff2014}, to obtain effect estimates that are both confounding-adjusted and generalizable to the NHANES target population (PATT).
+
+\end{enumerate}
+
+We will conduct two parallel analyses: one with stroke as the exposure, one with TBI as the exposure.
+
+\subsection{Covariates: Observed Confounders and Effect Modifiers}
+
+Based on prior literature and data availability, we identify the following as key observed confounders and potential effect modifiers:
+
+\begin{itemize}
+    \item \textbf{Demographic characteristics:} age (RIDAGEYR), sex (RIAGENDR), race/ethnicity (RIDRETH3).
+
+    \item \textbf{Socioeconomic status:} education level (DMDEDUC2), income-to-poverty ratio (INDFMPIR).
+
+    \item \textbf{Health behaviors and risk factors:} alcohol use and potential alcohol abuse (derived from ALQ151, ALQ141Q), smoking status (derived from SMQ020 and SMQ040; categories: every day, some days, not at all), hypertension (BPQ020), diabetes (DIQ010, including borderline as ``yes'').
+
+    \item \textbf{History of stroke:} for the TBI analysis, we will include stroke\_history (MCQ160F) as a covariate, given its strong relation to both TBI and healthcare utilization.
+
+    \item \textbf{Survey design characteristics:} primary sampling unit (SDMVPSU), stratum (SDMVSTRA), and NHANES interview sampling weight (WTINT2YR) will be included as predictors in the propensity score model, consistent with \citet{dugoff2014}'s recommendations for Stage 1.
+
+\end{itemize}
+
+We will treat age, sex, race/ethnicity, education, and income as candidate effect modifiers and will explore interactions in secondary analyses.
+
+\subsection{Potential Unobserved Confounders}
+
+We acknowledge that some important determinants of both exposure and outcomes may be unmeasured or imperfectly measured in NHANES, including:
+
+\begin{itemize}
+    \item Severity, timing, and mechanism of stroke or TBI,
+
+    \item Cognitive impairment severity, functional status, and disability,
+
+    \item Social support and detailed health system characteristics.
+
+\end{itemize}
+
+These factors may induce residual confounding. We plan to address robustness to unmeasured confounding via sensitivity analyses (see planned Section~8), for example gamma-based sensitivity analyses for matched observational studies.
+
+\subsection{Handling Missing and Corrupted Data}
+
+We will use a structured approach to missing data:
+
+\begin{enumerate}
+    \item \textbf{Missingness indicators.} For covariates with missing data (e.g., RIDAGEYR, RIAGENDR, RIDRETH3, DMDEDUC2, INDFMPIR, alcohol\_abuse, smoking\_status, hypertension, diabetes, stroke\_history), we will create binary indicators (e.g., RIDAGEYR\_missing) capturing whether the value was originally missing.
+
+    \item \textbf{Single imputation for covariates.} Continuous variables (e.g., age, income-to-poverty ratio) will be imputed using the sample mean. Categorical variables (e.g., sex, race/ethnicity, education, smoking\_status) will be recoded with an explicit ``Missing'' category. Binary health conditions (alcohol\_abuse, hypertension, diabetes, stroke\_history) will be imputed to their modal value.
+
+    \item \textbf{Exposures and primary outcomes.} Exposure variables (stroke\_exposed, tbi\_exposed) and primary outcomes will not be imputed; records with missing exposure or primary outcome will be excluded from the analytic sample as described in Section~4.
+
+\end{enumerate}
+
+Missingness indicators will then be included as covariates in the propensity score models, allowing the propensity score to account for systematic patterns of missingness in covariates.
+
+\subsection{Propensity Score Estimation}
+
+For each exposure (stroke and TBI), we will estimate propensity scores using logistic regression. The propensity score models will include all measured covariates (demographic characteristics, socioeconomic status, health behaviors and risk factors, and missingness indicators), along with the NHANES survey weights (WTINT2YR) and design variables (SDMVPSU, SDMVSTRA). For the TBI analysis, we will also include stroke history as a covariate. This approach is consistent with \citet{dugoff2014}'s Stage-1 recommendation for incorporating survey design information in propensity scores.
+
+Propensity scores (ps) and their logits (logit\_ps) will be predicted for all individuals with nonmissing exposure.
+
+\subsection{Matching Algorithm}
+
+We will implement optimal propensity score matching using the \texttt{MatchIt} package in R. For each exposure, we will:
+
+\begin{enumerate}
+    \item Restrict to participants with nonmissing exposure status (stroke data, TBI data).
+
+    \item Compute the pooled standard deviation of the logit propensity score among treated and control participants.
+
+    \item Define a caliper as $0.2$ times the pooled standard deviation of the logit propensity score.
+
+    \item Construct a distance matrix based on absolute differences in logit propensity score between treated and control units.
+
+    \item Apply the caliper by adding a large penalty to distances exceeding the caliper.
+
+    \item Perform optimal $1\!:\!k$ matching ($k = 1,\dots,6$) without replacement using \texttt{MatchIt}'s \texttt{method = "optimal"} and the pre-computed distance matrix.
+
+\end{enumerate}
+
+For each matching ratio (1:1 through 1:6), we will:
+
+\begin{itemize}
+    \item Extract the matched dataset,
+
+    \item Record the number of matched treated and control individuals and any treated units discarded due to the caliper, and
+
+    \item Save matched datasets for later analysis.
+
+\end{itemize}
+
+This design primarily targets the average treatment effect on the treated (ATT) in the matched sample; in combination with survey weights in the outcome analysis, we will interpret estimates as approximating the population average treatment effect on the treated (PATT) in the NHANES target population.
+
+\subsection{Covariate Balance and Diagnostics}
+
+We will assess covariate balance using the \texttt{cobalt} package in R. For each matched dataset, we will:
+
+\begin{itemize}
+    \item Compute standardized mean differences (SMD) before and after matching using \texttt{bal.tab},
+
+    \item Generate love plots summarizing covariate balance pre- and post-matching,
+
+    \item Summarize residual imbalance by counting covariates with $|\text{SMD}| > 0.05$, $0.10$, and $0.20$, and report the maximum $|\text{SMD}|$ and the percentage of covariates with $|\text{SMD}| > 0.10$.
+
+\end{itemize}
+
+We will select a final matching ratio (e.g., 1:1, 1:2, etc.) for each exposure based on:
+
+\begin{itemize}
+    \item Achieving SMD $< 0.10$ for all or nearly all covariates,
+
+    \item Minimizing the number of treated units discarded, and
+
+    \item Preserving adequate sample size for stable estimation.
+
+\end{itemize}
+
+Diagnostic plots and summary statistics will be included in the final manuscript to demonstrate successful balance in the matched samples.
+
+\subsection{Outcome Analysis and Bias Control}
+
+Following \citet{dugoff2014}, the outcome analysis will:
+
+\begin{itemize}
+    \item Use survey-weighted regression models (e.g., logistic regression for binary outcomes, Poisson/negative binomial for counts) applied to the matched data,
+
+    \item Incorporate NHANES sampling weights and design variables (strata and PSU) to ensure proper variance estimation and population-level inference, and
+
+    \item Reflect the matching design (by using the matched sample and appropriate weights).
+
+\end{itemize}
+
+For each exposure and outcome, the primary estimand will be the PATT---the difference in mean outcomes between exposed and unexposed, among those exposed in the target population.
+
+This design addresses bias from observed covariates by:
+
+\begin{itemize}
+    \item Including a rich set of confounders and missingness indicators in the propensity score model,
+
+    \item Ensuring good covariate balance after matching, and
+
+    \item Using survey design-based inference to retain generalizability.
+
+\end{itemize}
+
+Unobserved confounding will be addressed in planned sensitivity analyses (Section~8).
+
+\subsection{Implementation}
+
+All data management and analyses will be implemented in R, using the following core packages: \texttt{haven} and \texttt{tidyverse} for data ingestion and merging; \texttt{readr} and \texttt{tableone} for descriptive summaries; \texttt{MatchIt} for propensity score matching; and \texttt{cobalt} for covariate balance diagnostics.
+
+%========================
+\section{Study Analysis Plan}
+%========================
+
+\subsection{Primary Analysis}
+
+
+\subsection{Connection to Hypotheses}
+
+
+\subsection{Multiple Testing}
+
+
+\subsection{Inferential Methods}
+
+
+\subsection{Challenges and Solutions}
+
+
+\subsection{Empirical Summary}
+
+The following tables present shell structures for the key summary statistics, tables, and visualizations that will be used to report findings from the analyses.
+
+%==================================================
+% Shell tables
+%==================================================
+
+%------------------------------
+% Table 1: Demographics (TBI)
+%------------------------------
+\begin{table}[htbp]
+\centering
+\caption{Demographic and clinical characteristics of adults with and without traumatic brain injury (NHANES 2011--2014 TBI subsample)}
+\label{tab:demographics-tbi}
+\begin{tabular}{lccc}
+\hline
+\textbf{Characteristic} & \textbf{Total} & \textbf{TBI} & \textbf{No TBI} \\
+\hline
+Age (years) & & & \\
+Sex & & & \\
+\quad Male & & & \\
+\quad Female & & & \\
+Race / Ethnicity & & & \\
+Income-to-poverty ratio & & & \\
+Health insurance coverage & & & \\
+Education level & & & \\
+Alcohol consumption & & & \\
+Hypertension & & & \\
+Diabetes & & & \\
+Smoking & & & \\
+Ever told you had a stroke? & & & \\
+If yes: age at stroke (years) & & & \\
+If yes: time since stroke (years) & & & \\
+\hline
+\end{tabular}
+\end{table}
+
+%------------------------------
+% Table 2: Demographics (Stroke)
+%------------------------------
+\begin{table}[htbp]
+\centering
+\caption{Demographic and clinical characteristics of adults with and without stroke (NHANES 2011--2014 stroke subsample)}
+\label{tab:demographics-stroke}
+\begin{tabular}{lccc}
+\hline
+\textbf{Characteristic} & \textbf{Total} & \textbf{Stroke} & \textbf{No stroke} \\
+\hline
+Age (years) & & & \\
+Sex & & & \\
+\quad Male & & & \\
+\quad Female & & & \\
+Race / Ethnicity & & & \\
+Income-to-poverty ratio & & & \\
+Health insurance coverage & & & \\
+Education level & & & \\
+Alcohol consumption & & & \\
+Hypertension & & & \\
+Diabetes & & & \\
+Smoking & & & \\
+\hline
+\end{tabular}
+\end{table}
+
+%------------------------------
+% Table 3: Propensity covariate balance (BEFORE matching)
+%   (TBI and Stroke in a single shell, as in outline)
+%------------------------------
+\begin{table}[htbp]
+\centering
+\caption{Covariate balance before propensity score matching for TBI and stroke}
+\label{tab:ps-balance-before}
+\begin{tabular}{lcccccc}
+\hline
+\textbf{Variable (\% or mean)} &
+\multicolumn{3}{c}{\textbf{TBI vs No TBI}} &
+\multicolumn{3}{c}{\textbf{Stroke vs No stroke}} \\
+\cline{2-4} \cline{5-7}
+ & \textbf{No TBI} & \textbf{TBI} & \textbf{SMD} &
+   \textbf{No stroke} & \textbf{Stroke} & \textbf{SMD} \\
+\hline
+Age (years) & & & & & & \\
+Age range (e.g.\ 40--49, 50--59, \dots) & & & & & & \\
+Sex: Male & & & & & & \\
+Sex: Female & & & & & & \\
+Race / Ethnicity & & & & & & \\
+Income-to-poverty ratio & & & & & & \\
+Health insurance coverage & & & & & & \\
+Education level & & & & & & \\
+Alcohol consumption & & & & & & \\
+Hypertension & & & & & & \\
+Diabetes & & & & & & \\
+Smoking & & & & & & \\
+% Add any additional covariates used in the PS model
+\hline
+\end{tabular}
+\end{table}
+
+%------------------------------
+% Table 4: Propensity covariate balance (AFTER matching)
+%   (TBI and Stroke in a single shell, as in outline)
+%------------------------------
+\begin{table}[htbp]
+\centering
+\caption{Covariate balance after propensity score matching for TBI and stroke}
+\label{tab:ps-balance-after}
+\begin{tabular}{lcccccc}
+\hline
+\textbf{Variable (\% or mean)} &
+\multicolumn{3}{c}{\textbf{TBI vs No TBI}} &
+\multicolumn{3}{c}{\textbf{Stroke vs No stroke}} \\
+\cline{2-4} \cline{5-7}
+ & \textbf{No TBI} & \textbf{TBI} & \textbf{SMD} &
+   \textbf{No stroke} & \textbf{Stroke} & \textbf{SMD} \\
+\hline
+Age (years) & & & & & & \\
+Age range (e.g.\ 40--49, 50--59, \dots) & & & & & & \\
+Sex: Male & & & & & & \\
+Sex: Female & & & & & & \\
+Race / Ethnicity & & & & & & \\
+Income-to-poverty ratio & & & & & & \\
+Health insurance coverage & & & & & & \\
+Education level & & & & & & \\
+Alcohol consumption & & & & & & \\
+Hypertension & & & & & & \\
+Diabetes & & & & & & \\
+Smoking & & & & & & \\
+% Add any additional covariates used in the PS model
+\hline
+\end{tabular}
+\end{table}
+
+%------------------------------
+% Table 5: Access / utilization indicators by TBI status
+%------------------------------
+\begin{table}[htbp]
+\centering
+\caption{Healthcare access and utilization indicators by TBI status}
+\label{tab:access-tbi}
+\begin{tabular}{lccc}
+\hline
+\textbf{Measure of access / utilization} & \textbf{Total} & \textbf{TBI} & \textbf{No TBI} \\
+\hline
+Has routine place to go for healthcare & & & \\
+Type of usual place (e.g.\ clinic, doctor's office, ER, other) & & & \\
+Any health insurance coverage & & & \\
+Type of insurance: government & & & \\
+Type of insurance: private & & & \\
+Type of place most often used for healthcare & & & \\
+Time since last healthcare visit & & & \\
+Seen a mental health professional in past year & & & \\
+Number of overnight hospital stays (past year) & & & \\
+Any time without health insurance in past year & & & \\
+Plan covers prescription medicines & & & \\
+Plan covers mental-health related services & & & \\
+\hline
+\end{tabular}
+\end{table}
+
+%------------------------------
+% Table 6: Access / utilization indicators by stroke status
+%------------------------------
+\begin{table}[htbp]
+\centering
+\caption{Healthcare access and utilization indicators by stroke status}
+\label{tab:access-stroke}
+\begin{tabular}{lccc}
+\hline
+\textbf{Measure of access / utilization} & \textbf{Total} & \textbf{Stroke} & \textbf{No stroke} \\
+\hline
+Has routine place to go for healthcare & & & \\
+Type of usual place (e.g.\ clinic, doctor's office, ER, other) & & & \\
+Any health insurance coverage & & & \\
+Type of insurance: government & & & \\
+Type of insurance: private & & & \\
+Type of place most often used for healthcare & & & \\
+Time since last healthcare visit & & & \\
+Seen a mental health professional in past year & & & \\
+Number of overnight hospital stays (past year) & & & \\
+Any time without health insurance in past year & & & \\
+Plan covers prescription medicines & & & \\
+Plan covers mental-health related services & & & \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{Result Interpretation}
+
+
+\subsection{Generalizability}
+
+
+%========================
+\section{Sensitivity Analysis}
+%========================
+
+\subsection{Formal Sensitivity Methods}
+
+
+\subsection{Interpretation of Formal Sensitivity Analyses}
+
+
+\subsection{Stability Analyses}
+
+
+%========================
+\section{Simulation of Protocol}
+%========================
+
+\subsection{Simulation of Data}
+
+
+\subsection{Data Pipelining Code}
+
+
+\subsection{Baseline Summary Code}
+
+
+\subsection{Analyses Code}
+
+
+\subsection{Results Summary Code}
+
+
+%========================
+\section{Amendments}
+%========================
+
+
+%========================
+\section{Funding}
+%========================
+
+
+%========================
+\section{Future Steps}
+%========================
+
+\bibliography{references}
+
+\end{document}
