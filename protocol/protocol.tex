@@ -393,9 +393,7 @@ Missingness indicators will then be included as covariates in the propensity sco
 
 \subsection{Propensity Score Estimation}
 
-For each exposure (stroke and TBI), we will estimate propensity scores using logistic regression. The propensity score models will include all measured covariates (demographic characteristics, socioeconomic status, health behaviors and risk factors, and missingness indicators), along with the NHANES survey weights (WTINT2YR) and design variables (SDMVPSU, SDMVSTRA). For the TBI analysis, we will also include stroke history as a covariate. This approach is consistent with \citet{dugoff2014}'s Stage-1 recommendation for incorporating survey design information in propensity scores.
-
-Propensity scores (ps) and their logits (logit\_ps) will be predicted for all individuals with nonmissing exposure.
+For each exposure (stroke and TBI), we will estimate propensity scores using logistic regression. The propensity score models will include all measured covariates (demographic characteristics, socioeconomic status, health behaviors and risk factors, and missingness indicators), along with the NHANES survey weights (WTINT2YR) and design variables (SDMVPSU, SDMVSTRA). For the TBI analysis, we will also include stroke history as a covariate. This approach is consistent with \citet{dugoff2014}'s Stage-1 recommendation for incorporating survey design information in propensity scores. We will predict propensity scores and their logits for all individuals with nonmissing exposure status.
 
 \subsection{Matching Algorithm}
 
