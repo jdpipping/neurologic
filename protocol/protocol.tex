@@ -402,13 +402,15 @@ We will implement optimal propensity score matching using the \texttt{MatchIt} p
 \begin{enumerate}
     \item Restrict to participants with nonmissing exposure status (stroke data, TBI data).
 
+    \item Fit a logistic regression model to estimate propensity scores for all participants with nonmissing exposure status.
+
     \item Compute the pooled standard deviation of the logit propensity score among treated and control participants.
 
     \item Define a caliper as $0.2$ times the pooled standard deviation of the logit propensity score.
 
     \item Construct a distance matrix based on absolute differences in logit propensity score between treated and control units.
 
-    \item Apply the caliper by adding a large penalty to distances exceeding the caliper.
+    \item Apply the caliper by adding a large penalty (1000) to distances exceeding the caliper.
 
     \item Perform optimal $1\!:\!k$ matching ($k = 1,\dots,6$) without replacement using \texttt{MatchIt}'s \texttt{method = "optimal"} and the pre-computed distance matrix.
 
