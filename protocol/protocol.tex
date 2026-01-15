@@ -487,28 +487,158 @@ Unobserved confounding will be addressed in planned sensitivity analyses (Sectio
 
 All data management and analyses will be implemented in R, using the following core packages: \texttt{haven} and \texttt{tidyverse} for data ingestion and merging; \texttt{readr} and \texttt{tableone} for descriptive summaries; \texttt{MatchIt} for propensity score matching; and \texttt{cobalt} for covariate balance diagnostics.
 
+
 %========================
 \section{Study Analysis Plan}
 %========================
 
 \subsection{Primary Analysis}
 
+Within each matched sample (stroke vs.\ no stroke; TBI vs.\ no TBI), we estimate the association between exposure status and each healthcare access/utilization outcome using interview-weighted regression models.
+
+\paragraph{Model specification}
+
+For the two primary outcomes, we fit survey-weighted logistic regression models of the form:
+\[
+\text{logit}\{\Pr(Y_i = 1)\} = \beta_0 + \beta_1 A_i,
+\]
+where $A_i$ is an indicator for exposure (stroke or TBI). Because matching is intended to balance observed covariates, the primary model will include only the exposure indicator. If any prespecified covariate remains meaningfully imbalanced after matching (absolute standardized mean difference $>0.10$), we will include that covariate in an adjusted outcome model as a robustness check.
+
+\paragraph{Secondary outcomes}
+
+TO BE DONE.
+
+
+\paragraph{Weights and generalization}
+
+Analyses will incorporate NHANES interview sampling weights and complex survey design variables (strata and primary sampling unit). Following \citet{dugoff2014}, we will fit design-based, weighted regression models within the matched sample to obtain estimates that generalize to the NHANES target population. For $1!:!k$ matched samples, we will use the matching weights output by the matching procedure. Because we pool two NHANES 2-year cycles (2011--2012 and 2013--2014), we rescale the 2-year interview weight by the number of cycles; specifically, we use $w_i^{NH}=\texttt{WTINT2YR}/2$. The final analysis weight is then
+\[w_i = w_i^{NH}\cdot w_i^M\]
+where $w_i^{M}$ denotes the matching weight for individual $i$.
+
+\paragraph{Effect measures}
+
+We will report odds ratios (ORs) and 95\% confidence intervals for $\exp(\beta_1)$. To support interpretation on an absolute scale, we will also report marginal predicted probabilities under $A=1$ and $A=0$ (and their difference).
+
 
 \subsection{Connection to Hypotheses}
+
+Each fitted model directly operationalizes the study hypotheses by testing whether exposure status is associated with healthcare access/utilization in the target population.
+
+\begin{itemize}
+    \item For the TBI analysis, we hypothesize worse healthcare access/utilization among adults with TBI. For outcomes coded as $1=\text{favorable}$ (e.g., insured; usual source of care), this corresponds to $\beta_1 < 0$ (OR $<1$).
+
+    \item For the stroke analysis, we hypothesize greater healthcare contact and therefore more favorable access/utilization among adults with stroke. For outcomes coded as $1=\text{favorable}$, this corresponds to $\beta_1 > 0$ (OR $>1$).
+\end{itemize}
+
+Planned exploratory analyses of effect modification (e.g., by age, sex, race/ethnicity, education, and income-to-poverty ratio) will be conducted via exposure-by-subgroup interaction terms, with subgroup-specific estimates reported where supported by sample size.
 
 
 \subsection{Multiple Testing}
 
+Because we will evaluate multiple outcomes within each exposure analysis, we will control the familywise error rate using Bonferroni adjustments.
+
+For a family of $m$ hypothesis tests, the Bonferroni-adjusted $p$-value will be computed as:
+\[
+p_{\text{Bonf}} = \min(m \times p_{\text{unadj}},\,1).
+\]
+
+We will present both unadjusted and Bonferroni-adjusted $p$-values for transparency. Primary inferential statements will be based on the adjusted $p$-values, while unadjusted $p$-values will be reported as descriptive evidence. Adjustments will be applied separately for each exposure (stroke; TBI) and separately for the set of primary outcomes versus the set of secondary outcomes (two families per exposure).
+
 
 \subsection{Inferential Methods}
+
+All tests will be two-sided. Unless otherwise stated, we will use a nominal familywise $\alpha = 0.05$ within each outcome family after Bonferroni adjustment.
+
+\paragraph{Variance estimation and confidence intervals}
+
+To obtain valid standard errors under the NHANES complex design, we will use survey design-based variance estimation (Taylor series linearization) that accounts for stratification and clustering, along with the analysis weights described above. We will compute 95\% confidence intervals on the log-odds scale and transform to the odds ratio scale for reporting.
+
+\paragraph{Software}
+
+Survey-weighted regressions will be implemented using the \texttt{survey} framework in R (e.g., \texttt{svyglm} with \texttt{family=quasibinomial()} for binary outcomes), combined with the matched samples generated in Section~6.
 
 
 \subsection{Challenges and Solutions}
 
+Key anticipated analytic challenges and planned mitigations include:
 
-\subsection{Empirical Summary}
+\begin{itemize}
+    \item \textbf{Residual imbalance:} If balance diagnostics indicate meaningful residual imbalance on prespecified covariates, we will fit covariate-adjusted outcome models as described in the primary analysis.
 
-The following tables present shell structures for the key summary statistics, tables, and visualizations that will be used to report findings from the analyses.
+    \item \textbf{Multiplicity:} We will report both unadjusted and Bonferroni-adjusted $p$-values, with adjusted values guiding inferential claims.
+
+    \item DO WE WANT TO ADD TO THIS
+\end{itemize}
+
+
+% (Shell tables moved to Appendix~\ref{app:shell-tables}.)
+
+
+
+\subsection{Interpretation and Generalizability}
+
+\paragraph{Estimands}
+
+Because matching is performed with an exposure-defined treated group, the primary estimand in the matched (overlap) sample is the average treatment effect on the treated (ATT). When combined analysis weights are applied (product of matching weights and rescaled NHANES interview weights), the estimand is the population average treatment effect on the treated (PATT) for the NHANES target population of exposed individuals meeting the study eligibility criteria, consistent with \citet{dugoff2014}. We will present both matched-sample and population-generalized estimates to transparently convey the role of overlap and generalization.
+
+\paragraph{Substantive interpretation}
+
+We will emphasize effect sizes and uncertainty (ORs, risk differences, and 95\% CIs) rather than binary ``statistical significance.'' Multiplicity-adjusted $p$-values will guide formal inferential statements for the prespecified outcome families.
+
+\paragraph{Generalizability diagnostics}
+
+To assess whether population generalization is empirically supported, we will summarize (i) the distribution of the combined weights (including extrema and effective sample size) and (ii) overlap diagnostics. If diagnostics indicate highly variable weights or limited overlap, we will interpret population-generalized estimates as applying primarily to the overlap subpopulation and will consider stabilized and/or truncated weights as sensitivity analyses (reported as such).
+
+\section{Sensitivity Analysis}
+%========================
+
+\subsection{Formal Sensitivity Methods}
+
+
+\subsection{Interpretation of Formal Sensitivity Analyses}
+
+
+\subsection{Stability Analyses}
+
+
+%========================
+\section{Simulation of Protocol}
+%========================
+
+\subsection{Simulation of Data}
+
+
+\subsection{Data Pipelining Code}
+
+
+\subsection{Baseline Summary Code}
+
+
+\subsection{Analyses Code}
+
+
+\subsection{Results Summary Code}
+
+
+%========================
+\section{Amendments}
+%========================
+
+
+%========================
+\section{Funding}
+%========================
+
+
+%========================
+\section{Future Steps}
+%========================
+
+\appendix
+\section{Shell Tables and Reporting Templates}
+\label{app:shell-tables}
+
+The following tables provide reporting templates for descriptive summaries, covariate balance diagnostics, and outcome distributions. They are included to standardize reporting and do not define additional analyses beyond those specified in the main protocol.
 
 %==================================================
 % Shell tables
@@ -692,58 +822,6 @@ Plan covers mental-health related services & & & \\
 \hline
 \end{tabular}
 \end{table}
-
-\subsection{Result Interpretation}
-
-
-\subsection{Generalizability}
-
-
-%========================
-\section{Sensitivity Analysis}
-%========================
-
-\subsection{Formal Sensitivity Methods}
-
-
-\subsection{Interpretation of Formal Sensitivity Analyses}
-
-
-\subsection{Stability Analyses}
-
-
-%========================
-\section{Simulation of Protocol}
-%========================
-
-\subsection{Simulation of Data}
-
-
-\subsection{Data Pipelining Code}
-
-
-\subsection{Baseline Summary Code}
-
-
-\subsection{Analyses Code}
-
-
-\subsection{Results Summary Code}
-
-
-%========================
-\section{Amendments}
-%========================
-
-
-%========================
-\section{Funding}
-%========================
-
-
-%========================
-\section{Future Steps}
-%========================
 
 \bibliography{references}
 

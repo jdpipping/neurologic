@@ -185,12 +185,89 @@ This study utilizes data from the **National Health and Nutrition Examination Su
 4. **Save Outputs**:
    - Matched datasets: `data/matched/stroke_1_1.csv` through `stroke_1_6.csv` (6 files)
    - Matched datasets: `data/matched/tbi_1_1.csv` through `tbi_1_6.csv` (6 files)
-   - Love plots: `plots/love_stroke_1_1.png` through `love_stroke_1_6.png` (6 files)
-   - Love plots: `plots/love_tbi_1_1.png` through `love_tbi_1_6.png` (6 files)
+   - Love plots: `plots/matching/love_stroke_1_1.png` through `love_stroke_1_6.png` (6 files)
+   - Love plots: `plots/matching/love_tbi_1_1.png` through `love_tbi_1_6.png` (6 files)
+
+### Step 4: Outcome Analysis (`code/04_analysis.R`)
+
+**Purpose**: Estimate associations between exposure (stroke/TBI) and healthcare access/utilization outcomes using survey-weighted regression models
+
+**Process**:
+
+1. **Load Matched Data**:
+   - Load 1:4 matched datasets (final matching ratio)
+   - Stroke: `data/matched/stroke_1_4.csv` (2,155 participants)
+   - TBI: `data/matched/tbi_1_4.csv` (4,740 participants)
+
+2. **Create Outcome Variables**:
+   - `usual_place`: Binary (1 = has usual place for healthcare, 0 = no usual place)
+     - Derived from HUQ030 (response = 1 or 3 → 1, response = 2 → 0)
+   - `any_insurance`: Binary (1 = any health insurance coverage, 0 = uninsured)
+     - Derived from HIQ011 (response = 1 → 1, response = 2 → 0)
+
+3. **Create Analysis Weights**:
+   - Rescale NHANES interview weight: `w_nhanes = WTINT2YR / 2` (accounts for pooling 2 cycles)
+   - Final analysis weight: `w_analysis = w_nhanes * weights` (product of NHANES weight and matching weight)
+   - Following Dugoff et al. (2014) for combining propensity score matching with survey weights
+
+4. **Fit Survey-Weighted Regression Models**:
+   - Model: Survey-weighted logistic regression using `svyglm()` with `quasibinomial()` family
+   - Formula: `logit(Pr(Y=1)) = β₀ + β₁*A` (exposure-only model)
+   - Survey design: Accounts for complex survey design (PSU, strata) using `svydesign()`
+   - Variance estimation: Taylor series linearization (design-based)
+   - Estimand: Population Average Treatment Effect on the Treated (PATT)
+
+5. **Extract Results**:
+   - Odds ratios (OR) and 95% confidence intervals
+   - Marginal predicted probabilities under A=0 and A=1
+   - Risk differences with 95% confidence intervals
+   - Unadjusted p-values
+
+6. **Multiple Testing Adjustment**:
+   - Bonferroni adjustment applied separately for each exposure (stroke/TBI)
+   - Adjustment applied separately for primary outcomes (2 tests per exposure)
+   - Formula: `p_Bonf = min(m × p_unadj, 1)` where m = number of tests
+   - Reports both unadjusted and Bonferroni-adjusted p-values
+
+7. **Create Formatted Outputs**:
+   - **CSV files**: 
+     - `results/stroke_primary_results.csv` - Stroke analysis results
+     - `results/tbi_primary_results.csv` - TBI analysis results
+     - `results/results.csv` - Combined results (stroke + TBI)
+   - **HTML tables** (kableExtra):
+     - `results/stroke_results_table.html` - Formatted table with ORs, CIs, p-values
+     - `results/tbi_results_table.html` - Formatted table with ORs, CIs, p-values
+   - **Forest plots** (`plots/results/`):
+     - `stroke_forest_plot.png` - Forest plot with colored points/bars (red = not significant, blue = significant)
+     - `tbi_forest_plot.png` - Forest plot with colored points/bars
+   - **Diagnostic plots** (`plots/results/`):
+     - `stroke_weights_distribution.png` - Distribution of analysis weights (log scale)
+     - `tbi_weights_distribution.png` - Distribution of analysis weights (log scale)
+
+### Analysis Results (1:4 Matching)
+
+**Stroke Analysis** (n = 2,150-2,155):
+- **Usual place for healthcare**: OR = 1.64 (95% CI: 0.84, 3.18), p = 0.157 (Bonf adj: 0.313)
+  - Marginal probabilities: Exposed = 96.1%, Unexposed = 93.7%
+  - Risk difference = 2.3% (95% CI: -0.6%, 5.3%)
+- **Any health insurance**: OR = 1.19 (95% CI: 0.75, 1.87), p = 0.464 (Bonf adj: 0.928)
+  - Marginal probabilities: Exposed = 91.3%, Unexposed = 89.8%
+  - Risk difference = 1.5% (95% CI: -1.9%, 4.8%)
+
+**TBI Analysis** (n = 4,736-4,740):
+- **Usual place for healthcare**: OR = 0.96 (95% CI: 0.68, 1.34), p = 0.796 (Bonf adj: 1.000)
+  - Marginal probabilities: Exposed = 89.6%, Unexposed = 90.0%
+  - Risk difference = -0.4% (95% CI: -3.6%, 2.8%)
+- **Any health insurance**: OR = 0.94 (95% CI: 0.73, 1.20), p = 0.625 (Bonf adj: 1.000)
+  - Marginal probabilities: Exposed = 85.6%, Unexposed = 86.4%
+  - Risk difference = -0.8% (95% CI: -4.4%, 2.9%)
+
+**Key Findings**:
+- Stroke: Positive associations (OR > 1) suggest better healthcare access among stroke survivors, consistent with hypothesis, though not statistically significant after Bonferroni adjustment
+- TBI: Negative associations (OR < 1) suggest worse healthcare access among TBI survivors, consistent with hypothesis, though not statistically significant after Bonferroni adjustment
+- All analyses account for complex survey design and use combined NHANES and matching weights (PATT estimand)
 
 ### Matching Results
-
-**Results with 0.2 SD Caliper and WTINT2YR included in PS model**:
 
 **Stroke Study**:
 - **Caliper**: 0.2651 SD of logit(propensity score)
@@ -220,15 +297,6 @@ This study utilizes data from the **National Health and Nutrition Examination Su
 - TBI balance degrades at higher ratios (1:5 and 1:6 exceed 0.10 threshold)
 - Smaller caliper for TBI (0.139 vs 0.2651 for stroke) reflects less variability in propensity scores
 
-**Why TBI Caliper is Smaller**:
-- **TBI has less variability in propensity scores**: Pooled SD ≈ 0.70 (vs 1.33 for stroke)
-  - TBI treated group SD: ~0.55 (vs ~1.05 for stroke) → More homogeneous treated group
-  - TBI control group SD: ~0.76 (vs ~1.55 for stroke) → More homogeneous control group
-- **Possible reasons**:
-  1. TBI treated group is more homogeneous (less variability in matching covariates)
-  2. Better model fit for TBI (matching variables explain more variance)
-  3. Tighter propensity score distributions (less spread in logit(PS))
-- **Implications**: Smaller caliper = tighter matching constraint, but all treated units still matched successfully, suggesting good overlap despite tighter distributions
 
 ## Directory Structure
 
@@ -237,7 +305,8 @@ This study utilizes data from the **National Health and Nutrition Examination Su
 ├── code/
 │   ├── 01_data-prep.R          # Data preparation: load and merge NHANES datasets
 │   ├── 02_data-exploration.R   # Data exploration: create exposure/outcome variables, handle missingness
-│   └── 03_matching.R           # Propensity score matching: match exposed and unexposed participants
+│   ├── 03_matching.R           # Propensity score matching: match exposed and unexposed participants
+│   └── 04_analysis.R           # Outcome analysis: survey-weighted regression models
 ├── data/
 │   ├── clean/                  # Cleaned datasets
 │   │   ├── master_data.csv     # Master dataset (19,931 participants, 324 variables)
@@ -255,9 +324,21 @@ This study utilizes data from the **National Health and Nutrition Examination Su
 │       ├── smoking/
 │       ├── hypertension/
 │       └── diabetes/
-├── plots/                      # Balance plots (Love plots)
-│   ├── love_stroke_1_1.png through love_stroke_1_6.png (6 files)
-│   └── love_tbi_1_1.png through love_tbi_1_6.png (6 files)
+├── plots/                      # Visualizations
+│   ├── matching/               # Matching diagnostics
+│   │   ├── love_stroke_1_1.png through love_stroke_1_6.png (6 files)
+│   │   └── love_tbi_1_1.png through love_tbi_1_6.png (6 files)
+│   └── results/                # Analysis results
+│       ├── stroke_forest_plot.png
+│       ├── tbi_forest_plot.png
+│       ├── stroke_weights_distribution.png
+│       └── tbi_weights_distribution.png
+├── results/                    # Analysis results
+│   ├── results.csv             # Combined results (stroke + TBI)
+│   ├── stroke_primary_results.csv
+│   ├── tbi_primary_results.csv
+│   ├── stroke_results_table.html
+│   └── tbi_results_table.html
 ├── protocol/
 │   └── outline.pdf
 └── neurologic.Rproj
