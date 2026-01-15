@@ -558,14 +558,14 @@ if (nrow(stroke_results) > 0) {
       panel.grid.minor = element_blank()
     )
   
-  # Create plots directory structure
-  if (!dir.exists("plots/results")) {
-    dir.create("plots/results", recursive = TRUE)
+  # Create results directory if it doesn't exist
+  if (!dir.exists("results")) {
+    dir.create("results", recursive = TRUE)
   }
   
-  ggsave("plots/results/stroke_forest_plot.png", stroke_forest, 
+  ggsave("results/stroke_forest_plot.png", stroke_forest, 
          width = 8, height = 4, dpi = 300)
-  cat("Stroke forest plot saved to: plots/results/stroke_forest_plot.png\n")
+  cat("Stroke forest plot saved to: results/stroke_forest_plot.png\n")
 }
 
 # Forest plot for TBI results
@@ -607,9 +607,9 @@ if (nrow(tbi_results) > 0) {
       panel.grid.minor = element_blank()
     )
   
-  ggsave("plots/results/tbi_forest_plot.png", tbi_forest, 
+  ggsave("results/tbi_forest_plot.png", tbi_forest, 
          width = 8, height = 4, dpi = 300)
-  cat("TBI forest plot saved to: plots/results/tbi_forest_plot.png\n")
+  cat("TBI forest plot saved to: results/tbi_forest_plot.png\n")
 }
 
 # Diagnostic plot: Distribution of analysis weights
@@ -626,9 +626,9 @@ if (nrow(stroke_data) > 0) {
     theme_minimal() +
     theme(plot.title = element_text(face = "bold", size = 11))
   
-  ggsave("plots/results/stroke_weights.png", weight_diag_stroke, 
+  ggsave("results/stroke_weights.png", weight_diag_stroke, 
          width = 8, height = 5, dpi = 300)
-  cat("Stroke weights distribution plot saved to: plots/results/stroke_weights.png\n")
+  cat("Stroke weights plot saved to: results/stroke_weights.png\n")
 }
 
 if (nrow(tbi_data) > 0) {
@@ -644,9 +644,9 @@ if (nrow(tbi_data) > 0) {
     theme_minimal() +
     theme(plot.title = element_text(face = "bold", size = 11))
   
-  ggsave("plots/results/tbi_weights.png", weight_diag_tbi, 
+  ggsave("results/tbi_weights.png", weight_diag_tbi, 
          width = 8, height = 5, dpi = 300)
-  cat("TBI weights distribution plot saved to: plots/results/tbi_weights.png\n")
+  cat("TBI weights plot saved to: results/tbi_weights.png\n")
 }
 
 #######################
@@ -675,6 +675,5 @@ cat("\n=== ANALYSIS COMPLETE ===\n")
 cat("Review results/ directory for detailed output files\n")
 cat("  - CSV files: stroke_primary_results.csv, tbi_primary_results.csv\n")
 cat("  - HTML tables: stroke_results_table.html, tbi_results_table.html\n")
-cat("Review plots/ directory for visualizations\n")
-cat("  - Results plots: plots/results/ (forest plots, weight distributions)\n")
-cat("  - Matching plots: plots/matching/ (love plots)\n")
+cat("  - Plots: stroke_forest_plot.png, tbi_forest_plot.png, stroke_weights.png, tbi_weights.png\n")
+cat("Review matching/ directory for matching diagnostics (love plots)\n")

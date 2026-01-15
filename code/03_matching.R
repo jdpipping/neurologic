@@ -240,11 +240,11 @@ run_balance_diagnostics = function(match_obj, match_name) {
                         title = paste("Balance Plot:", match_name))
   print(love_plot)
   # save love plot to file
-  # Create plots/matching directory if it doesn't exist
-  if (!dir.exists("plots/matching")) {
-    dir.create("plots/matching", recursive = TRUE)
+  # Create matching directory if it doesn't exist
+  if (!dir.exists("matching")) {
+    dir.create("matching", recursive = TRUE)
   }
-  out_plot_path = file.path("plots", "matching", paste0("love_", match_name, ".png"))
+  out_plot_path = file.path("matching", paste0("love_", match_name, ".png"))
   ggsave(out_plot_path, love_plot, width = 8, height = 6, dpi = 300)
 
   # 3. concise SMD summary across thresholds

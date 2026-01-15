@@ -185,8 +185,8 @@ This study utilizes data from the **National Health and Nutrition Examination Su
 4. **Save Outputs**:
    - Matched datasets: `data/matched/stroke_1_1.csv` through `stroke_1_6.csv` (6 files)
    - Matched datasets: `data/matched/tbi_1_1.csv` through `tbi_1_6.csv` (6 files)
-   - Love plots: `plots/matching/love_stroke_1_1.png` through `love_stroke_1_6.png` (6 files)
-   - Love plots: `plots/matching/love_tbi_1_1.png` through `love_tbi_1_6.png` (6 files)
+   - Love plots: `matching/love_stroke_1_1.png` through `love_stroke_1_6.png` (6 files)
+   - Love plots: `matching/love_tbi_1_1.png` through `love_tbi_1_6.png` (6 files)
 
 ### Step 4: Outcome Analysis (`code/04_analysis.R`)
 
@@ -237,12 +237,12 @@ This study utilizes data from the **National Health and Nutrition Examination Su
    - **HTML tables** (kableExtra):
      - `results/stroke_results_table.html` - Formatted table with ORs, CIs, p-values
      - `results/tbi_results_table.html` - Formatted table with ORs, CIs, p-values
-   - **Forest plots** (`plots/results/`):
+   - **Forest plots** (`results/`):
      - `stroke_forest_plot.png` - Forest plot with colored points/bars (red = not significant, blue = significant)
      - `tbi_forest_plot.png` - Forest plot with colored points/bars
-   - **Diagnostic plots** (`plots/results/`):
-     - `stroke_weights_distribution.png` - Distribution of analysis weights (log scale)
-     - `tbi_weights_distribution.png` - Distribution of analysis weights (log scale)
+   - **Diagnostic plots** (`results/`):
+     - `stroke_weights.png` - Distribution of analysis weights (log scale)
+     - `tbi_weights.png` - Distribution of analysis weights (log scale)
 
 ### Analysis Results (1:4 Matching)
 
@@ -324,21 +324,19 @@ This study utilizes data from the **National Health and Nutrition Examination Su
 │       ├── smoking/
 │       ├── hypertension/
 │       └── diabetes/
-├── plots/                      # Visualizations
-│   ├── matching/               # Matching diagnostics
-│   │   ├── love_stroke_1_1.png through love_stroke_1_6.png (6 files)
-│   │   └── love_tbi_1_1.png through love_tbi_1_6.png (6 files)
-│   └── results/                # Analysis results
-│       ├── stroke_forest_plot.png
-│       ├── tbi_forest_plot.png
-│       ├── stroke_weights_distribution.png
-│       └── tbi_weights_distribution.png
+├── matching/                   # Matching diagnostics
+│   ├── love_stroke_1_1.png through love_stroke_1_6.png (6 files)
+│   └── love_tbi_1_1.png through love_tbi_1_6.png (6 files)
 ├── results/                    # Analysis results
 │   ├── results.csv             # Combined results (stroke + TBI)
 │   ├── stroke_primary_results.csv
 │   ├── tbi_primary_results.csv
 │   ├── stroke_results_table.html
-│   └── tbi_results_table.html
+│   ├── tbi_results_table.html
+│   ├── stroke_forest_plot.png
+│   ├── tbi_forest_plot.png
+│   ├── stroke_weights.png
+│   └── tbi_weights.png
 ├── protocol/
 │   └── outline.pdf
 └── neurologic.Rproj
