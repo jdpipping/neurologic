@@ -18,7 +18,7 @@ Ashil Srivastava and Dylan Small}
 
 \begin{document}
 
-% Set up running headers and footers
+% Set up running headers and footers∂
 \pagestyle{fancy}
 \fancyhf{}
 \fancyhead[L]{\leftmark}
@@ -47,7 +47,7 @@ Association of Stroke and Traumatic Brain Injury with Healthcare Access and Util
 
 \textbf{Data and Setting:} We will use data from the 2011--2012 and 2013--2014 cycles of the National Health and Nutrition Examination Survey (NHANES), a complex, multistage probability sample of the noninstitutionalized U.S. civilian population.
 
-\textbf{Design:} This is an observational, cross-sectional study using existing survey data. For each exposure (stroke and TBI), we will construct separate analytic cohorts and estimate propensity scores for exposure as a function of demographic, socioeconomic, health behavior, cardiovascular risk, and survey design variables (strata, primary sampling unit, and interview weights), along with missingness indicators. We will perform optimal $1\!:\!k$ propensity score matching with a caliper of $0.2$ pooled standard deviations on the logit of the propensity score and assess covariate balance using standardized mean differences and graphical diagnostics (love plots).
+\textbf{Design:} This is an observational, cross-sectional study using existing survey data. For each exposure (stroke and TBI), we construct separate analytic cohorts and estimate propensity scores for exposure as a function of demographic, socioeconomic, health behavior, cardiovascular risk, and survey design variables (strata, primary sampling unit, and interview weights), along with missingness indicators. We perform optimal $1\!:\!4$ propensity score matching (selected after evaluating ratios 1:1--1:6) with a caliper of $0.2$ pooled standard deviations on the logit of the propensity score and assess covariate balance using standardized mean differences and love plots (Section~6).
 
 \textbf{Primary Outcomes:} The primary outcomes are (1) having a usual place to go for healthcare and (2) having any health insurance coverage. Secondary outcomes include type of insurance (public vs.\ private), type of usual source of care, time since last healthcare visit, mental health service use, hospitalizations, and prescription coverage.
 
@@ -452,6 +452,28 @@ We will select a final matching ratio (e.g., 1:1, 1:2, etc.) for each exposure b
     \item Preserving adequate sample size for stable estimation.
 
 \end{itemize}
+
+\paragraph{Chosen matching design.}
+We compared candidate fixed-ratio matches from 1:1 through 1:6 and selected the final ratio using only design-stage diagnostics (i.e., covariate balance, overlap, and retention), without examining any outcome variables. Based on the criteria above, we selected \textbf{1:4 matching} for both exposures because it achieved the best overall trade-off between covariate balance and retention of treated participants.
+
+For stroke, the 1:4 matched sample met the balance criterion across all covariates (max $|\text{SMD}| = 0.043$; 0 covariates with $|\text{SMD}| > 0.10$), retained all 431 treated participants, and yielded a total matched sample size of 2,155 for outcome modeling. For TBI, the 1:4 matched sample also met the balance criterion (max $|\text{SMD}| = 0.095$; 0 covariates with $|\text{SMD}| > 0.10$), retained all 948 treated participants, and yielded a total matched sample size of 4,740. All outcome analyses (Section~7) will be conducted using these 1:4 matched datasets.
+
+\paragraph{Love plots (1:4 matching).}
+Figure~\ref{fig:love-stroke} and Figure~\ref{fig:love-tbi} display standardized mean differences (SMD) for each covariate before and after 1:4 propensity score matching for the stroke and TBI analyses, respectively. Values closer to zero indicate improved balance after matching. The vertical reference line at 0.10 denotes the a priori balance threshold. Love plots (and balance tables) for all evaluated ratios (1:1--1:6) will be summarized in the final manuscript and/or supplement.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.8\textwidth]{../matching/love_stroke_1_4.png}
+\caption{Covariate balance before and after 1:4 propensity score matching: stroke vs.\ no stroke. The vertical line at 0.10 indicates the balance threshold.}
+\label{fig:love-stroke}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.8\textwidth]{../matching/love_tbi_1_4.png}
+\caption{Covariate balance before and after 1:4 propensity score matching: TBI vs.\ no TBI. The vertical line at 0.10 indicates the balance threshold.}
+\label{fig:love-tbi}
+\end{figure}
 
 Diagnostic plots and summary statistics will be included in the final manuscript to demonstrate successful balance in the matched samples.
 
