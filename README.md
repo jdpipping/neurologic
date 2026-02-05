@@ -338,6 +338,8 @@ This study utilizes data from the **National Health and Nutrition Examination Su
 │   ├── stroke_weights.png
 │   └── tbi_weights.png
 ├── protocol/
-│   └── outline.pdf
+│   ├── protocol.pdf
+│   ├── outline.pdf
+│   └── references.bib
 └── neurologic.Rproj
 ```
