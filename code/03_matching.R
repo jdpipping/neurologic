@@ -10,6 +10,10 @@ library(readr)
 library(tableone)
 library(tidyverse)
 
+# CHOSEN DESIGN: 1:4 matching for both stroke and TBI (see protocol Section 6 and README).
+# Outcome analysis (04_analysis.R) uses: data/matched/stroke_1_4.csv, data/matched/tbi_1_4.csv.
+# Love plots for the chosen design: matching/love_stroke_1_4.png, matching/love_tbi_1_4.png.
+
 #################
 ### LOAD DATA ###
 #################
@@ -235,17 +239,19 @@ run_balance_diagnostics = function(match_obj, match_name) {
   smd_results = bal.tab(match_obj, binary = "std")
   print(smd_results)
   
-  # 2. love plot
-  love_plot = love.plot(match_obj, binary = "std", 
-                        title = paste("Balance Plot:", match_name))
+  # 2. love plot (title e.g. "Balance Plot: Stroke 1:4")
+  exposure = sub("_.*", "", match_name)
+  ratio = sub(".*_1_", "", match_name)
+  display_exposure = if (exposure == "tbi") "TBI" else paste0(toupper(substring(exposure, 1, 1)), substring(exposure, 2))
+  plot_title = paste("Balance Plot:", display_exposure, "1:", ratio)
+  love_plot = love.plot(match_obj, binary = "std", title = plot_title)
   print(love_plot)
-  # save love plot to file
-  # Create matching directory if it doesn't exist
+  # save love plot to file (6 in x 4 in)
   if (!dir.exists("matching")) {
     dir.create("matching", recursive = TRUE)
   }
   out_plot_path = file.path("matching", paste0("love_", match_name, ".png"))
-  ggsave(out_plot_path, love_plot, width = 8, height = 6, dpi = 300)
+  ggsave(out_plot_path, love_plot, width = 6, height = 4, dpi = 300)
 
   # 3. concise SMD summary across thresholds
   bal_df = as.data.frame(smd_results$Balance)
