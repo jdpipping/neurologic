@@ -10,10 +10,6 @@ library(readr)
 library(tableone)
 library(tidyverse)
 
-# CHOSEN DESIGN: 1:4 matching for both stroke and TBI (see protocol Section 6 and README).
-# Outcome analysis (04_analysis.R) uses: data/matched/stroke_1_4.csv, data/matched/tbi_1_4.csv.
-# Love plots for the chosen design: matching/love_stroke_1_4.png, matching/love_tbi_1_4.png.
-
 #################
 ### LOAD DATA ###
 #################
@@ -128,11 +124,7 @@ for (ratio in 1:6) {
   ps_dist[ps_dist > ps_caliper_stroke] = ps_dist[ps_dist > ps_caliper_stroke] + 1000
   
   # perform optimal matching with custom distance matrix
-  match_obj = matchit(match_formula_stroke,
-                      data = stroke_data,
-                      method = "optimal",
-                      distance = ps_dist,
-                      ratio = ratio)
+  match_obj = matchit(match_formula_stroke, data = stroke_data, method = "optimal", distance = ps_dist, ratio = ratio)
   
   # store results
   stroke_matches[[paste0("stroke_1_", ratio)]] = match_obj
@@ -202,11 +194,7 @@ for (ratio in 1:6) {
   ps_dist[ps_dist > ps_caliper_tbi] = ps_dist[ps_dist > ps_caliper_tbi] + 1000
   
   # perform optimal matching with custom distance matrix
-  match_obj = matchit(match_formula_tbi,
-                      data = tbi_data,
-                      method = "optimal",
-                      distance = ps_dist,
-                      ratio = ratio)
+  match_obj = matchit(match_formula_tbi, data = tbi_data, method = "optimal", distance = ps_dist, ratio = ratio)
   
   # store results
   tbi_matches[[paste0("tbi_1_", ratio)]] = match_obj
@@ -251,7 +239,7 @@ run_balance_diagnostics = function(match_obj, match_name) {
     dir.create("matching", recursive = TRUE)
   }
   out_plot_path = file.path("matching", paste0("love_", match_name, ".png"))
-  ggsave(out_plot_path, love_plot, width = 6, height = 4, dpi = 300)
+  ggsave(out_plot_path, love_plot, width = 6, height = 4, dpi = 600)
 
   # 3. concise SMD summary across thresholds
   bal_df = as.data.frame(smd_results$Balance)
