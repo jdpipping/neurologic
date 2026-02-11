@@ -188,7 +188,20 @@ This study utilizes data from the **National Health and Nutrition Examination Su
    - Love plots: `matching/love_stroke_1_1.png` through `love_stroke_1_6.png` (6 files)
    - Love plots: `matching/love_tbi_1_1.png` through `love_tbi_1_6.png` (6 files)
 
-### Step 4: Outcome Analysis (`code/04_analysis.R`)
+### Step 4: Negative Control Balance Check (`code/04_negative-control.R`)
+
+**Purpose**: Post-matching diagnostic for residual confounding using marijuana ever-use as a falsification variable (not in PS model)
+
+**Process**:
+1. **Negative control variable**: Marijuana ever-use (DUQ200: "Ever used marijuana or hashish?") — Z=1 if Yes, Z=0 if No; Refused/Don't know/not administered = missing
+2. **Data**: DUQ from `data/nhanes/drug-use/`, merged via pipeline; assessed within matched samples (stroke_1_4, tbi_1_4) among respondents with observed Z
+3. **Diagnostics** (per protocol):
+   - Weighted SMD for Z between exposed and unexposed (using same analysis weights as primary: w_nhanes × matching weight)
+   - Survey-weighted logistic regression: marijuana_ever ~ exposure; report OR (95% CI)
+4. **Interpretation**: Success = SMD < 0.10 and OR close to 1 (95% CI includes 1)
+5. **Output**: `results/negative_control_results.csv`
+
+### Step 5: Outcome Analysis (`code/05_analysis.R`)
 
 **Purpose**: Estimate associations between exposure (stroke/TBI) and healthcare access/utilization outcomes using survey-weighted regression models
 
@@ -234,6 +247,7 @@ This study utilizes data from the **National Health and Nutrition Examination Su
      - `results/stroke_primary_results.csv` - Stroke analysis results
      - `results/tbi_primary_results.csv` - TBI analysis results
      - `results/results.csv` - Combined results (stroke + TBI)
+     - `results/negative_control_results.csv` - Negative control balance check
    - **HTML tables** (kableExtra):
      - `results/stroke_results_table.html` - Formatted table with ORs, CIs, p-values
      - `results/tbi_results_table.html` - Formatted table with ORs, CIs, p-values
@@ -306,7 +320,8 @@ This study utilizes data from the **National Health and Nutrition Examination Su
 │   ├── 01_data-prep.R          # Data preparation: load and merge NHANES datasets
 │   ├── 02_data-exploration.R   # Data exploration: create exposure/outcome variables, handle missingness
 │   ├── 03_matching.R           # Propensity score matching: match exposed and unexposed participants
-│   └── 04_analysis.R           # Outcome analysis: survey-weighted regression models
+│   ├── 04_negative-control.R   # Negative control balance check (marijuana ever-use)
+│   └── 05_analysis.R           # Outcome analysis: survey-weighted regression models
 ├── data/
 │   ├── clean/                  # Cleaned datasets
 │   │   ├── master_data.csv     # Master dataset (19,931 participants, 324 variables)
@@ -323,7 +338,8 @@ This study utilizes data from the **National Health and Nutrition Examination Su
 │       ├── alcohol/
 │       ├── smoking/
 │       ├── hypertension/
-│       └── diabetes/
+│       ├── diabetes/
+│       └── drug-use/
 ├── matching/                   # Matching diagnostics
 │   ├── love_stroke_1_1.png through love_stroke_1_6.png (6 files)
 │   └── love_tbi_1_1.png through love_tbi_1_6.png (6 files)

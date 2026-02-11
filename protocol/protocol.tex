@@ -229,7 +229,7 @@ We will exclude:
 
 \end{itemize}
 
-We will not exclude participants solely based on missing covariate values used for propensity score estimation; instead, we will address covariate missingness as described in Section~\ref{sec:design} (missingness indicators and single imputation).
+We will not exclude participants solely based on missing covariate values used for propensity score estimation; instead, we will address covariate missingness as described in Section~\ref{sec:design} (missingness indicators and deterministic value assignment).
 
 \subsection{Data Counts and Flow}
 
@@ -381,11 +381,11 @@ These factors may induce residual confounding. We plan to address robustness to 
 We will use a structured approach to missing data:
 
 \begin{enumerate}
-    \item \textbf{Missingness indicators.} For covariates with missing data (e.g., RIDAGEYR, RIAGENDR, RIDRETH3, DMDEDUC2, INDFMPIR, alcohol\_abuse, smoking\_status, hypertension, diabetes, stroke\_history), we will create binary indicators (e.g., RIDAGEYR\_missing) capturing whether the value was originally missing.
+    \item \textbf{Missingness indicators.} For each covariate with missing values (e.g., RIDAGEYR, RIAGENDR, RIDRETH3, DMDEDUC2, INDFMPIR, alcohol\_abuse, smoking\_status, hypertension, diabetes, stroke\_history), we will create a binary indicator (e.g., \texttt{RIDAGEYR\_missing}) equal to 1 if the original value is missing and 0 otherwise. These indicators will be included in the propensity score model so that matching explicitly accounts for patterns of missingness.
 
-    \item \textbf{Single imputation for covariates.} Continuous variables (e.g., age, income-to-poverty ratio) will be imputed using the sample mean. Categorical variables (e.g., sex, race/ethnicity, education, smoking\_status) will be recoded with an explicit ``Missing'' category. Binary health conditions (alcohol\_abuse, hypertension, diabetes, stroke\_history) will be imputed to their modal value.
+    \item \textbf{Deterministic value assignment for missing entries.} To ensure that all records have well-defined covariate values for propensity score estimation and matching, we will assign a fixed, internally consistent placeholder value to missing entries, while retaining the corresponding missingness indicators described above. Specifically, continuous variables (e.g., age, income-to-poverty ratio) will have missing entries replaced with the analytic-sample mean; categorical variables (e.g., sex, race/ethnicity, education, smoking\_status) will include an explicit ``Missing'' category; and binary health conditions (alcohol\_abuse, hypertension, diabetes, stroke\_history) will have missing entries replaced with the modal category. This approach is intended to preserve the analytic sample and allow the propensity score to adjust for missingness through the indicator variables, rather than relying on a model-based missing-data procedure.
 
-    \item \textbf{Exposures and primary outcomes.} Exposure variables (stroke\_exposed, tbi\_exposed) and primary outcomes will not be imputed; records with missing exposure or primary outcome will be excluded from the analytic sample as described in Section~4.
+    \item \textbf{Exposures and primary outcomes.} Exposure variables (stroke\_exposed, tbi\_exposed) and primary outcomes will not be filled in; records with missing exposure or missing primary outcomes will be excluded from the analytic sample as described in Section~4.
 
 \end{enumerate}
 
@@ -477,6 +477,32 @@ Figure~\ref{fig:love-stroke} and Figure~\ref{fig:love-tbi} display standardized 
 
 Diagnostic plots and summary statistics will be included in the final manuscript to demonstrate successful balance in the matched samples.
 
+\subsection{Negative control balance check}
+\label{sec:neg-control}
+
+As an additional post-matching diagnostic for residual confounding, we will evaluate balance on a prespecified \emph{negative control} variable that is not used in the propensity score (PS) model or the matching procedure: lifetime marijuana ever-use.
+
+\paragraph{Negative control definition.}
+We define a binary indicator $Z_i$ for whether respondent $i$ reports having ever tried marijuana/hashish, derived from the NHANES Drug Use Questionnaire item \texttt{DUQ200} (``Ever used marijuana or hashish?'').\footnote{NHANES DUQ is administered only to a restricted age range (e.g., through age 69 in 2011--2014), so this diagnostic will be assessed within the subset for whom \texttt{DUQ200} is collected and nonmissing.} We code $Z_i=1$ for ``Yes'' and $Z_i=0$ for ``No''; responses such as ``Refused,'' ``Don't know,'' or not administered will be treated as missing for this diagnostic.
+
+\paragraph{Rationale.}
+Marijuana ever-use is plausibly associated with unmeasured behavioral and social factors (e.g., risk-taking, policing/incarceration exposure, social instability) that may also relate to healthcare access and utilization, but it is not a study exposure, not a study outcome, and is not included in the PS model. Therefore, imbalance on $Z_i$ after matching would serve as a falsification-style indicator of residual confounding or incomplete balance on correlated, unmeasured constructs.
+
+\paragraph{Diagnostic procedure.}
+Within each final matched dataset (stroke; TBI), and restricting to respondents with observed $Z_i$, we will:
+\begin{enumerate}
+    \item Compute the standardized mean difference (SMD) for $Z_i$ between exposed and matched unexposed participants, using the same analysis weights as the primary matched analyses (i.e., the product of the rescaled NHANES weight and the matching weight).
+    \item Fit a survey-weighted logistic regression in the matched sample with $Z_i$ as the dependent variable and exposure indicator $A_i$ as the sole predictor:
+    \[
+    \text{logit}\{\Pr(Z_i = 1)\} = \alpha_0 + \alpha_1 A_i,
+    \]
+    and report $\exp(\alpha_1)$ with a 95\% confidence interval.
+\end{enumerate}
+We will interpret successful negative-control balance as SMD $<0.10$ and an odds ratio close to 1 (i.e., no meaningful association between exposure and marijuana ever-use in the matched sample).
+
+\paragraph{Prespecified response to imbalance.}
+If the negative control diagnostic indicates meaningful imbalance (e.g., SMD $\ge 0.10$ or an odds ratio materially different from 1 with a narrow confidence interval), we will treat this as evidence that the current PS specification/matching parameters may not have adequately balanced constructs correlated with unmeasured confounding. Without examining any primary or secondary outcome variables, we will consider design-stage revisions such as: (i) modifying the PS model to include additional pre-exposure behavioral covariates available in NHANES, (ii) tightening the caliper, and/or (iii) adjusting the matching ratio, and then re-assessing covariate balance. The final negative control diagnostic results will be reported alongside the main balance diagnostics.
+
 \subsection{Outcome Analysis and Bias Control}
 
 Following \citet{dugoff2014}, the outcome analysis will:
@@ -528,8 +554,23 @@ where $A_i$ is an indicator for exposure (stroke or TBI). Because matching is in
 
 \paragraph{Secondary outcomes}
 
-TO BE DONE.
+For secondary outcomes, we will use survey-weighted generalized linear models within the matched samples, choosing the link function and distribution to align with the outcome type. The primary predictor remains the exposure indicator $A_i$ (stroke or TBI), and the primary secondary-outcome models will include only $A_i$; as with the primary outcomes, if any covariate remains meaningfully imbalanced after matching (absolute SMD $>0.10$), we will fit an adjusted model including those covariates as a robustness check.
 
+\textit{Binary secondary outcomes.} For binary secondary outcomes (e.g., public vs.\ private insurance among those insured; any mental health visit in the past year; any gap in insurance in the past year; prescription coverage; mental-health service coverage), we will fit survey-weighted logistic regression models:
+\[
+\text{logit}\{\Pr(Y_i = 1)\} = \gamma_0 + \gamma_1 A_i,
+\]
+and report $\exp(\gamma_1)$ as an odds ratio with a 95\% confidence interval, along with marginal predicted probabilities under $A=1$ and $A=0$ and their difference.
+
+\textit{Categorical secondary outcomes.} For categorical secondary outcomes with more than two levels (e.g., type of usual source of care; time since last healthcare visit), we will fit survey-weighted multinomial logistic regression models. For multinomial models, we will report relative risk ratios (or odds ratios, depending on parameterization) comparing each non-reference category to the reference, with 95\% confidence intervals, and will present marginal predicted category probabilities for interpretability.
+
+\textit{Count secondary outcomes.} For count outcomes (e.g., number of overnight hospital stays in the past year), we will fit survey-weighted count regression models. The default will be a Poisson model with log link,
+\[
+\log\{\mathbb{E}(Y_i)\} = \delta_0 + \delta_1 A_i,
+\]
+and we will assess overdispersion; if overdispersion is present, we will use a negative binomial model or (if necessary) a categorized version of the count (e.g., 0 vs.\ $\ge 1$, or 0 / 1 / $\ge 2$) analyzed via logistic or multinomial methods. We will report rate ratios (or odds ratios for categorized versions) and 95\% confidence intervals, and will provide marginal predicted means (or probabilities) under $A=1$ and $A=0$.
+
+All secondary outcome analyses are considered supportive and hypothesis-generating relative to the primary outcomes; we will nonetheless apply multiplicity control to the secondary-outcome family as described below.
 
 \paragraph{Weights and generalization}
 
@@ -539,8 +580,7 @@ where $w_i^{M}$ denotes the matching weight for individual $i$.
 
 \paragraph{Effect measures}
 
-We will report odds ratios (ORs) and 95\% confidence intervals for $\exp(\beta_1)$. To support interpretation on an absolute scale, we will also report marginal predicted probabilities under $A=1$ and $A=0$ (and their difference).
-
+We will report odds ratios (ORs) and 95\% confidence intervals for $\exp(\beta_1)$ (and analogously $\exp(\gamma_1)$ for binary secondary outcomes). To support interpretation on an absolute scale, we will also report marginal predicted probabilities under $A=1$ and $A=0$ (and their difference). For multinomial outcomes, we will report contrasts relative to the reference category and marginal predicted category probabilities. For count outcomes, we will report rate ratios (or odds ratios if categorized) and marginal predicted means under $A=1$ and $A=0$ (and their difference).
 
 \subsection{Connection to Hypotheses}
 
@@ -554,7 +594,6 @@ Each fitted model directly operationalizes the study hypotheses by testing wheth
 
 Planned exploratory analyses of effect modification (e.g., by age, sex, race/ethnicity, education, and income-to-poverty ratio) will be conducted via exposure-by-subgroup interaction terms, with subgroup-specific estimates reported where supported by sample size.
 
-
 \subsection{Multiple Testing}
 
 Because we will evaluate multiple outcomes within each exposure analysis, we will control the familywise error rate using Bonferroni adjustments.
@@ -564,8 +603,7 @@ For a family of $m$ hypothesis tests, the Bonferroni-adjusted $p$-value will be 
 p_{\text{Bonf}} = \min(m \times p_{\text{unadj}},\,1).
 \]
 
-We will present both unadjusted and Bonferroni-adjusted $p$-values for transparency. Primary inferential statements will be based on the adjusted $p$-values, while unadjusted $p$-values will be reported as descriptive evidence. Adjustments will be applied separately for each exposure (stroke; TBI) and separately for the set of primary outcomes versus the set of secondary outcomes (two families per exposure).
-
+We will present both unadjusted and Bonferroni-adjusted $p$-values for transparency. Primary inferential statements will be based on the adjusted $p$-values, while unadjusted $p$-values will be reported as descriptive evidence. Adjustments will be applied separately for each exposure (stroke; TBI) and \textbf{separately for the primary outcomes versus the secondary outcomes} (two families per exposure). Specifically, within each exposure analysis we will apply Bonferroni adjustment across the two primary outcomes as one family, and across the set of secondary outcomes as a separate family.
 
 \subsection{Inferential Methods}
 
@@ -573,12 +611,11 @@ All tests will be two-sided. Unless otherwise stated, we will use a nominal fami
 
 \paragraph{Variance estimation and confidence intervals}
 
-To obtain valid standard errors under the NHANES complex design, we will use survey design-based variance estimation (Taylor series linearization) that accounts for stratification and clustering, along with the analysis weights described above. We will compute 95\% confidence intervals on the log-odds scale and transform to the odds ratio scale for reporting.
+To obtain valid standard errors under the NHANES complex design, we will use survey design-based variance estimation (Taylor series linearization) that accounts for stratification and clustering, along with the analysis weights described above. We will compute 95\% confidence intervals on the log-odds scale and transform to the odds ratio scale for reporting. For multinomial and count models, confidence intervals will be computed on the model's natural link scale and then transformed to relative risk ratios/odds ratios or rate ratios as appropriate.
 
 \paragraph{Software}
 
-Survey-weighted regressions will be implemented using the \texttt{survey} framework in R (e.g., \texttt{svyglm} with \texttt{family=quasibinomial()} for binary outcomes), combined with the matched samples generated in Section~6.
-
+Survey-weighted regressions will be implemented using the \texttt{survey} framework in R (e.g., \texttt{svyglm} with \texttt{family=quasibinomial()} for binary outcomes), combined with the matched samples generated in Section~6. Multinomial and count models will be implemented using survey-compatible routines (or equivalent design-based approaches) with careful attention to sparse-cell stability.
 
 \subsection{Challenges and Solutions}
 
@@ -587,15 +624,12 @@ Key anticipated analytic challenges and planned mitigations include:
 \begin{itemize}
     \item \textbf{Residual imbalance:} If balance diagnostics indicate meaningful residual imbalance on prespecified covariates, we will fit covariate-adjusted outcome models as described in the primary analysis.
 
-    \item \textbf{Multiplicity:} We will report both unadjusted and Bonferroni-adjusted $p$-values, with adjusted values guiding inferential claims.
+    \item \textbf{Multiplicity:} We will report both unadjusted and Bonferroni-adjusted $p$-values, with adjusted values guiding inferential claims, applying adjustments separately for primary and secondary outcome families within each exposure.
 
-    \item DO WE WANT TO ADD TO THIS
+    \item \textbf{Sparse categories:} For multinomial outcomes with sparse cells, we will use prespecified collapses or dichotomizations to ensure stable estimation and interpretable contrasts, and will report the coding choices transparently.
 \end{itemize}
 
-
 % (Shell tables moved to Appendix~\ref{app:shell-tables}.)
-
-
 
 \subsection{Interpretation and Generalizability}
 
@@ -616,45 +650,52 @@ To assess whether population generalization is empirically supported, we will su
 
 \subsection{Formal Sensitivity Methods}
 
+Because propensity score matching addresses only measured confounding, we will assess robustness of key inferences to potential \emph{unmeasured} confounding using Rosenbaum-style $\Gamma$ sensitivity analyses for matched observational studies. The sensitivity parameter $\Gamma \ge 1$ represents the degree to which, within a matched set, two individuals with identical observed covariates could differ in their odds of exposure due to an unobserved factor. When $\Gamma=1$, the study is consistent with no hidden bias; larger $\Gamma$ values represent increasing departures from ignorability.
+
+We will conduct $\Gamma$ sensitivity analyses for the prespecified \textbf{primary outcomes} within each matched cohort (stroke; TBI). For binary outcomes, we will use matched-set (stratified) tests appropriate for variable-ratio matching (1:4) to evaluate how large $\Gamma$ would need to be for conclusions to change under increasing hidden bias. Sensitivity analyses will be reported for the matched design (ATT in the overlap sample); we will present them as complementary to the survey-weighted population-generalized analyses, because Rosenbaum-style methods are fundamentally design-based for matched sets.
 
 \subsection{Interpretation of Formal Sensitivity Analyses}
 
+For each primary outcome and exposure, we will report the largest value of $\Gamma$ for which the study's inferential conclusion is unchanged (e.g., the smallest $\Gamma$ at which the $p$-value would cross the prespecified threshold after multiplicity adjustment). Intuitively, larger critical $\Gamma$ values indicate greater robustness: it would take a stronger unmeasured bias in exposure assignment to explain away the observed association.
+
+We will interpret these results descriptively as a robustness diagnostic rather than a definitive correction for bias. Sensitivity results will be discussed alongside covariate-balance diagnostics and the negative control balance check, with emphasis on how much unmeasured confounding would be required to materially alter conclusions for the primary outcomes.
 
 \subsection{Stability Analyses}
 
+We will assess the stability of results to reasonable analytic choices that do not change the scientific question. These may include:
 
-%========================
-\section{Simulation of Protocol}
-%========================
+\begin{itemize}
+    \item \textbf{Alternative matching specifications (design-stage).} Re-estimating effects under alternative matching ratios (e.g., 1:1--1:6) and/or alternative calipers (e.g., 0.1, 0.2, 0.25 SD of the logit PS), restricted to specifications that maintain acceptable post-match covariate balance.
 
-\subsection{Simulation of Data}
+    \item \textbf{Outcome-model robustness.} Re-fitting primary outcome models with adjustment for any covariates that remain meaningfully imbalanced after matching (absolute SMD $>0.10$), as a robustness check to residual imbalance.
 
+    \item \textbf{Coding robustness.} Evaluating whether conclusions are sensitive to minor, prespecified alternative codings of key derived covariates (e.g., alternative smoking-status categorization) and, where relevant, alternative codings of secondary outcomes (e.g., different cut points for ``time since last healthcare visit'').
 
-\subsection{Data Pipelining Code}
+    \item \textbf{Weight diagnostics.} Summarizing the distribution of combined analysis weights (NHANES rescaled interview weight multiplied by matching weight) and repeating analyses with stabilized and/or truncated weights as a sensitivity analysis if extreme weights are observed, reporting any such truncation choices transparently.
+\end{itemize}
 
-
-\subsection{Baseline Summary Code}
-
-
-\subsection{Analyses Code}
-
-
-\subsection{Results Summary Code}
-
+All sensitivity and stability analyses will be clearly labeled as such and will not replace the prespecified primary analysis.
 
 %========================
 \section{Amendments}
 %========================
-
+Any amendments to this protocol will be documented and reported in the final manuscript and/or supplementary materials. Amendments will include a description of the change, the rationale, the date implemented, and whether the change occurred before or after examining outcome data. Examples of amendable items include changes to inclusion/exclusion criteria, exposure or outcome definitions, propensity score specification, matching parameters, weighting/variance procedures, and sensitivity analyses.
 
 %========================
 \section{Funding}
 %========================
-
+This study has no external funding to report. There were no funders involved in the study design; data acquisition; analysis; interpretation; manuscript preparation; or the decision to submit results for publication.
 
 %========================
 \section{Future Steps}
 %========================
+
+After completion of the analyses described in this protocol, we will:
+\begin{enumerate}
+    \item Execute the prespecified matched, survey-weighted outcome analyses for stroke and TBI cohorts; generate all tables/figures (including descriptive summaries, balance diagnostics, and primary/secondary outcome results).
+    \item Complete the prespecified sensitivity and stability analyses and compile diagnostics on overlap and weight distributions.
+    \item Draft a Results section and Discussion consistent with STROBE reporting elements that depend on observed results (including presentation of main effect estimates and key findings), and prepare supplementary materials documenting diagnostics and any protocol amendments.
+\end{enumerate}
 
 \appendix
 \section{Shell Tables and Reporting Templates}

@@ -93,6 +93,15 @@ diabetes_2013_2014 = read_xpt("data/nhanes/diabetes/DIQ_H.xpt.txt")
 head(diabetes_2011_2012)
 head(diabetes_2013_2014)
 
+# DRUG USE #
+
+# load
+drug_2011_2012 = read_xpt("data/nhanes/drug-use/DUQ_G.xpt.txt")
+drug_2013_2014 = read_xpt("data/nhanes/drug-use/DUQ_H.xpt.txt")
+# preview
+head(drug_2011_2012)
+head(drug_2013_2014)
+
 
 ###################
 ### MERGE YEARS ###
@@ -197,6 +206,17 @@ diabetes_data = bind_rows(diabetes_2011_2012, diabetes_2013_2014)
 # preview
 head(diabetes_data)
 
+# DRUG USE #
+
+# merge
+drug_2011_2012 = drug_2011_2012 |>
+  mutate(year = as.factor("2011-2012"))
+drug_2013_2014 = drug_2013_2014 |>
+  mutate(year = as.factor("2013-2014"))
+drug_data = bind_rows(drug_2011_2012, drug_2013_2014)
+# preview
+head(drug_data)
+
 
 ######################
 ### MASTER DATASET ###
@@ -216,7 +236,9 @@ master_data <- demo_data |>
   left_join(alcohol_data, by = c("SEQN", "year")) |>
   left_join(smoking_data, by = c("SEQN", "year")) |>
   left_join(hypertension_data, by = c("SEQN", "year")) |>
-  left_join(diabetes_data, by = c("SEQN", "year"))
+  left_join(diabetes_data, by = c("SEQN", "year")) |>
+  # drug use
+  left_join(drug_data, by = c("SEQN", "year"))
 
 #################
 ### SAVE DATA ###
@@ -228,6 +250,7 @@ write_csv(hiq_data, "data/clean/hiq_data.csv")
 write_csv(huq_data, "data/clean/huq_data.csv")
 write_csv(stroke_data, "data/clean/stroke_data.csv")
 write_csv(tbi_data, "data/clean/tbi_data.csv")
+write_csv(drug_data, "data/clean/drug_data.csv")
 
 # save master dataset to file
 write_csv(master_data, "data/clean/master_data.csv")
