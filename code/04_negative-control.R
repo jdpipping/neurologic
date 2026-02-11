@@ -28,9 +28,9 @@ if (!"DUQ200" %in% names(tbi_data)) {
     left_join(drug_data |> select(SEQN, year, DUQ200), by = c("SEQN", "year"))
 }
 
-#############################
+############################
 ### NEGATIVE CONTROL (Z) ###
-#############################
+############################
 
 # DUQ200: "Ever used marijuana or hashish?"
 # 1 = Yes -> Z = 1
@@ -202,7 +202,7 @@ if (nrow(neg_control_results) > 0) {
 
 #####################
 ### SUMMARY TABLE ###
-#####################s
+#####################
 
 cat("\n=== NEGATIVE CONTROL BALANCE CHECK SUMMARY ===\n")
 if (nrow(neg_control_results) > 0) {
