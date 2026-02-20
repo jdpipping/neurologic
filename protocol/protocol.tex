@@ -503,6 +503,23 @@ We will interpret successful negative-control balance as SMD $<0.10$ and an odds
 \paragraph{Prespecified response to imbalance.}
 If the negative control diagnostic indicates meaningful imbalance (e.g., SMD $\ge 0.10$ or an odds ratio materially different from 1 with a narrow confidence interval), we will treat this as evidence that the current PS specification/matching parameters may not have adequately balanced constructs correlated with unmeasured confounding. Without examining any primary or secondary outcome variables, we will consider design-stage revisions such as: (i) modifying the PS model to include additional pre-exposure behavioral covariates available in NHANES, (ii) tightening the caliper, and/or (iii) adjusting the matching ratio, and then re-assessing covariate balance. The final negative control diagnostic results will be reported alongside the main balance diagnostics.
 
+\paragraph{Results.}
+Table~\ref{tab:neg-control} presents the negative control diagnostic results for the 1:4 matched samples. For stroke, the SMD for marijuana ever-use was $<0.10$ and the odds ratio 95\% CI included 1, indicating successful balance on the negative control. For TBI, the SMD exceeded 0.10 and the odds ratio 95\% CI excluded 1, suggesting residual imbalance on constructs correlated with marijuana ever-use; per the prespecified response, design-stage revisions may be warranted for the TBI analysis.
+
+\begin{table}[htbp]
+\centering
+\caption{Negative control balance check: marijuana ever-use in matched samples (1:4 matching)}
+\label{tab:neg-control}
+\begin{tabular}{lcccccc}
+\hline
+\textbf{Dataset} & \textbf{$n$} & \textbf{Exposed} & \textbf{Unexposed} & \textbf{SMD} & \textbf{OR (95\% CI)} & \textbf{Balance OK?} \\
+\hline
+Stroke & 429 & 91 & 338 & $-0.05$ & 0.90 (0.53, 1.52) & Yes \\
+TBI & 2,217 & 460 & 1,757 & 0.16 & 1.41 (1.16, 1.72) & No \\
+\hline
+\end{tabular}
+\end{table}
+
 \subsection{Outcome Analysis and Bias Control}
 
 Following \citet{dugoff2014}, the outcome analysis will:
