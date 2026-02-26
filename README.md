@@ -85,6 +85,7 @@ This study utilizes data from the **National Health and Nutrition Examination Su
    - Smoking (SMQ_G/H.xpt): Smoking status
    - Hypertension (BPQ_G/H.xpt): Hypertension diagnosis
    - Diabetes (DIQ_G/H.xpt): Diabetes diagnosis
+   - Drug Use (DUQ_G/H.xpt): Marijuana ever-use (for negative control diagnostic)
 
 2. Merge survey cycles (2011-2012 + 2013-2014) for each dataset
 
@@ -187,6 +188,7 @@ This study utilizes data from the **National Health and Nutrition Examination Su
    - Matched datasets: `data/matched/tbi_1_1.csv` through `tbi_1_6.csv` (6 files)
    - Love plots: `matching/love_stroke_1_1.png` through `love_stroke_1_6.png` (6 files)
    - Love plots: `matching/love_tbi_1_1.png` through `love_tbi_1_6.png` (6 files)
+   - Love plot (revised TBI): `matching/love_tbi_1_4_revised.png` (TBI 1:4 with marijuana in PS, from Step 4)
 
 ### Step 4: Negative Control Balance Check (`code/04_negative-control.R`)
 
@@ -200,6 +202,7 @@ This study utilizes data from the **National Health and Nutrition Examination Su
    - Survey-weighted logistic regression: marijuana_ever ~ exposure; report OR (95% CI)
 4. **Interpretation**: Success = SMD < 0.10 and OR close to 1 (95% CI includes 1)
 5. **Output**: `results/negative_control_results.csv`
+6. **Revised TBI matching** (when TBI shows imbalance): Re-run 1:4 TBI matching with marijuana_ever in the PS model; save `matching/love_tbi_1_4_revised.png`
 
 ### Step 5: Outcome Analysis (`code/05_analysis.R`)
 
@@ -311,6 +314,16 @@ This study utilizes data from the **National Health and Nutrition Examination Su
 - TBI balance degrades at higher ratios (1:5 and 1:6 exceed 0.10 threshold)
 - Smaller caliper for TBI (0.139 vs 0.2651 for stroke) reflects less variability in propensity scores
 
+**Balance summary (1:4 matching)** — run `code/balance_summary.R` for max |SMD| and covariates > 0.05:
+
+| Match | Max \|SMD\| | Covariates > 0.05 |
+|-------|------------|-------------------|
+| Stroke 1:4 | 0.091 | 1 |
+| TBI 1:4 | 0.093 | 4 |
+| TBI 1:4 (incl. marijuana use) | 0.096 | 5 |
+
+**Negative control**: Stroke passes (SMD &lt; 0.10, OR CI includes 1); TBI fails. Revised TBI matching with marijuana in the PS does not improve covariate balance.
+
 
 ## Directory Structure
 
@@ -320,8 +333,9 @@ This study utilizes data from the **National Health and Nutrition Examination Su
 │   ├── 01_data-prep.R          # Data preparation: load and merge NHANES datasets
 │   ├── 02_data-exploration.R   # Data exploration: create exposure/outcome variables, handle missingness
 │   ├── 03_matching.R           # Propensity score matching: match exposed and unexposed participants
-│   ├── 04_negative-control.R   # Negative control balance check (marijuana ever-use)
-│   └── 05_analysis.R           # Outcome analysis: survey-weighted regression models
+│   ├── 04_negative-control.R   # Negative control balance check + revised TBI matching
+│   ├── 05_analysis.R           # Outcome analysis: survey-weighted regression models
+│   └── balance_summary.R       # Balance summary for stroke/TBI 1:4 (all 3 versions)
 ├── data/
 │   ├── clean/                  # Cleaned datasets
 │   │   ├── master_data.csv     # Master dataset (19,931 participants, 324 variables)
@@ -342,7 +356,8 @@ This study utilizes data from the **National Health and Nutrition Examination Su
 │       └── drug-use/
 ├── matching/                   # Matching diagnostics
 │   ├── love_stroke_1_1.png through love_stroke_1_6.png (6 files)
-│   └── love_tbi_1_1.png through love_tbi_1_6.png (6 files)
+│   ├── love_tbi_1_1.png through love_tbi_1_6.png (6 files)
+│   └── love_tbi_1_4_revised.png (TBI 1:4 incl. marijuana use)
 ├── results/                    # Analysis results
 │   ├── results.csv             # Combined results (stroke + TBI)
 │   ├── stroke_primary_results.csv
@@ -352,7 +367,9 @@ This study utilizes data from the **National Health and Nutrition Examination Su
 │   ├── stroke_forest_plot.png
 │   ├── tbi_forest_plot.png
 │   ├── stroke_weights.png
-│   └── tbi_weights.png
+│   ├── tbi_weights.png
+│   ├── negative_control_results.csv
+│   └── balance_summary_1_4.csv
 ├── protocol/
 │   ├── protocol.pdf
 │   ├── outline.pdf

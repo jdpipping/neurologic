@@ -2,10 +2,12 @@
 ### PACKAGES ###
 ################
 
-# install.packages(c("survey", "tidyverse", "readr"))
+# install.packages(c("survey", "tidyverse", "readr", "cobalt", "MatchIt"))
 library(survey)
 library(tidyverse)
 library(readr)
+library(cobalt)
+library(MatchIt)
 
 #################
 ### LOAD DATA ###
@@ -14,6 +16,9 @@ library(readr)
 # Load final matched datasets (1:4 matching, same as primary analysis)
 stroke_data = read_csv("data/matched/stroke_1_4.csv", show_col_types = FALSE)
 tbi_data = read_csv("data/matched/tbi_1_4.csv", show_col_types = FALSE)
+
+# Load matching data for revised TBI matching (with marijuana in PS model)
+matching_data = read_csv("data/clean/matching_data.csv", show_col_types = FALSE)
 
 # Load drug use data (DUQ200) - may not be in matched files if pipeline ran before drug merge
 drug_data = read_csv("data/clean/drug_data.csv", show_col_types = FALSE)
@@ -181,6 +186,97 @@ run_negative_control = function(df, exposure_var, dataset_name) {
 
 stroke_neg = run_negative_control(stroke_data, "stroke_exposed", "stroke_1_4")
 tbi_neg = run_negative_control(tbi_data, "tbi_exposed", "tbi_1_4")
+
+###############################################
+### REVISED TBI MATCHING (marijuana in PS) ###
+###############################################
+
+# TBI had imbalance on marijuana ever-use. Re-run 1:4 matching with marijuana_ever in the PS model.
+
+cat("\n=== REVISED TBI MATCHING (1:4 with marijuana ever-use in PS model) ===\n")
+
+# Merge drug data if DUQ200 not in matching_data, then create marijuana_ever
+if (!"DUQ200" %in% names(matching_data)) {
+  matching_data = matching_data |>
+    left_join(drug_data |> select(SEQN, year, DUQ200), by = c("SEQN", "year"))
+}
+matching_data = matching_data |>
+  mutate(
+    marijuana_ever = case_when(
+      DUQ200 == 1 ~ 1,
+      DUQ200 == 2 ~ 0,
+      TRUE ~ NA_real_
+    )
+  )
+
+# Restrict to TBI sample
+tbi_matching_data = matching_data |>
+  filter(!is.na(tbi_exposed))
+
+# Add missingness indicator and impute marijuana_ever (for PS model)
+marijuana_mode = as.numeric(names(which.max(table(tbi_matching_data$marijuana_ever, useNA = "no"))))
+if (length(marijuana_mode) == 0) marijuana_mode = 0
+tbi_matching_data = tbi_matching_data |>
+  mutate(
+    marijuana_ever_missing = as.integer(is.na(marijuana_ever)),
+    marijuana_ever = ifelse(is.na(marijuana_ever), marijuana_mode, marijuana_ever)
+  )
+
+# TBI matching vars: original + marijuana_ever + marijuana_ever_missing
+base_matching_vars = c("RIDAGEYR", "RIAGENDR", "RIDRETH3", "INDFMPIR", "DMDEDUC2")
+design_vars = c("SDMVPSU", "SDMVSTRA")
+sample_weight_var = "WTINT2YR"
+health_outcome_vars = c("alcohol_abuse", "smoking_status", "hypertension", "diabetes")
+tbi_matching_vars_revised = c(
+  base_matching_vars, design_vars, sample_weight_var,
+  health_outcome_vars, "stroke_history", "marijuana_ever", "marijuana_ever_missing"
+)
+
+match_formula_tbi_revised = as.formula(paste(
+  "tbi_exposed ~",
+  paste(tbi_matching_vars_revised, collapse = " + ")
+))
+
+# Fit PS model
+ps_model_tbi_revised = glm(match_formula_tbi_revised, data = tbi_matching_data, family = binomial)
+tbi_matching_data$ps = predict(ps_model_tbi_revised, type = "response")
+tbi_matching_data$logit_ps = predict(ps_model_tbi_revised, type = "link")
+
+# Caliper: 0.2 SD of logit(PS)
+treated_logit = tbi_matching_data$logit_ps[tbi_matching_data$tbi_exposed == 1]
+control_logit = tbi_matching_data$logit_ps[tbi_matching_data$tbi_exposed == 0]
+spool = sqrt((sd(treated_logit, na.rm = TRUE)^2 + sd(control_logit, na.rm = TRUE)^2) / 2)
+ps_caliper = 0.2 * spool
+
+# 1:4 matching
+treated_idx = which(tbi_matching_data$tbi_exposed == 1)
+control_idx = which(tbi_matching_data$tbi_exposed == 0)
+ps_dist = abs(outer(tbi_matching_data$logit_ps[treated_idx], tbi_matching_data$logit_ps[control_idx], "-"))
+ps_dist[ps_dist > ps_caliper] = ps_dist[ps_dist > ps_caliper] + 1000
+
+match_tbi_revised = matchit(
+  match_formula_tbi_revised,
+  data = tbi_matching_data,
+  method = "optimal",
+  distance = ps_dist,
+  ratio = 4
+)
+
+cat("Matched sample:", sum(match.data(match_tbi_revised)$tbi_exposed == 1), "treated,",
+    sum(match.data(match_tbi_revised)$tbi_exposed == 0), "controls\n")
+
+# Love plot
+love_tbi_revised = love.plot(
+  match_tbi_revised,
+  binary = "std",
+  title = "Balance Plot: TBI 1:4 (incl. marijuana use)",
+  thresholds = c(m = 0.1)
+)
+if (!dir.exists("matching")) {
+  dir.create("matching", recursive = TRUE)
+}
+ggsave("matching/love_tbi_1_4_revised.png", love_tbi_revised, width = 6, height = 4, dpi = 600)
+cat("Love plot saved: matching/love_tbi_1_4_revised.png\n")
 
 ####################
 ### SAVE RESULTS ###

@@ -232,7 +232,7 @@ run_balance_diagnostics = function(match_obj, match_name) {
   ratio = sub(".*_1_", "", match_name)
   display_exposure = if (exposure == "tbi") "TBI" else paste0(toupper(substring(exposure, 1, 1)), substring(exposure, 2))
   plot_title = paste("Balance Plot:", display_exposure, "1:", ratio)
-  love_plot = love.plot(match_obj, binary = "std", title = plot_title)
+  love_plot = love.plot(match_obj, binary = "std", title = plot_title, thresholds = c(m = 0.1))
   print(love_plot)
   # save love plot to file (6 in x 4 in)
   if (!dir.exists("matching")) {
