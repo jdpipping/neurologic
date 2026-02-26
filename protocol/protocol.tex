@@ -11,7 +11,7 @@
 \usepackage[round]{natbib}
 \bibliographystyle{apalike}
 
-\title{Association of Stroke and Traumatic Brain Injury with Healthcare Access and Utilization in the U.S. Adult Population: A Propensity Score--Matched Analysis of NHANES 2011--2014}
+\title{Investigating the Causal Effect of Stroke and Traumatic Brain Injury on Healthcare Access and Utilization in the U.S. Adult Population: A Propensity Score--Matched Analysis of NHANES 2011--2014}
 \author{Mike Baiocchi, Jonathan Pipping, Andrea Schneider, 
 Ashil Srivastava and Dylan Small}
 \date{}
@@ -37,13 +37,13 @@ Ashil Srivastava and Dylan Small}
 
 \subsection{Title}
 
-Association of Stroke and Traumatic Brain Injury with Healthcare Access and Utilization in the U.S. Adult Population: A Propensity Score--Matched Analysis of NHANES 2011--2014
+Investigating the Causal Effect of Stroke and Traumatic Brain Injury on Healthcare Access and Utilization in the U.S. Adult Population: A Propensity Score--Matched Analysis of NHANES 2011--2014
 
 \subsection{Abstract}
 
 \textbf{Background:} Traumatic brain injury (TBI) and stroke are common neurologic conditions associated with substantial morbidity and mortality in the United States. Both conditions can have long-term cognitive, functional, and psychosocial consequences that may increase the need for ongoing healthcare. At the same time, barriers to healthcare access and utilization may worsen outcomes among individuals with a history of TBI or stroke.
 
-\textbf{Objectives:} This study will estimate the association between self-reported lifetime history of (1) stroke and (2) traumatic brain injury (TBI) with loss of consciousness and multiple indicators of healthcare access and utilization in a nationally representative sample of U.S. adults.
+\textbf{Objectives:} This study will estimate the causal effect of self-reported lifetime history of two exposures: (1) stroke and (2) traumatic brain injury (TBI) with loss of consciousness, on several outcomes (i.e., multiple indicators of healthcare access and utilization) in a nationally representative sample of U.S. adults.
 
 \textbf{Data and Setting:} We will use data from the 2011--2012 and 2013--2014 cycles of the National Health and Nutrition Examination Survey (NHANES), a complex, multistage probability sample of the noninstitutionalized U.S. civilian population.
 
@@ -53,7 +53,7 @@ Association of Stroke and Traumatic Brain Injury with Healthcare Access and Util
 
 \textbf{Analytic Plan:} Within the matched samples, we will estimate the population average treatment effect on the treated (PATT), i.e., the effect among adults with a history of stroke or TBI, using survey-weighted models that incorporate both NHANES sampling weights and the matched design, following the framework of \citet{dugoff2014} for combining propensity score methods with complex survey data.
 
-\textbf{Results and Conclusions:} This document describes the protocol and planned analyses. Numerical results and final conclusions will be added once analyses are completed.
+\textbf{Results and Conclusions:} This document describes the protocol and planned analyses. After the publication of this protocol, the required analyses will be completed and numerical results and final conclusions will be detailed in a separate manuscript.
 
 %========================
 \section{Introduction}
@@ -72,9 +72,9 @@ Using these data, this study will:
 \begin{enumerate}
     \item Quantify how healthcare access and utilization differ between adults with and without a history of stroke and between adults with and without a history of TBI.
 
-    \item Evaluate whether these associations vary across demographic and socioeconomic subgroups (e.g., age, sex, race/ethnicity, education, income).
+    \item Evaluate whether these effects vary across demographic and socioeconomic subgroups (e.g., age, sex, race/ethnicity, education, income).
 
-    \item Implement propensity score methods combined with NHANES survey weights, following \citet{dugoff2014}, to obtain effect estimates that are both adjusted for observed confounding and generalizable to the national target population.
+    \item Implement propensity score methods combined with NHANES survey weights, following \citet{dugoff2014}, to obtain effect estimates that both control for observed confounding and generalize to the national target population.
 
 \end{enumerate}
 
@@ -86,7 +86,7 @@ By doing so, the study aims to inform whether individuals with prior stroke or T
 
 \subsection{Primary Research Question}
 
-Among noninstitutionalized U.S. adults represented by NHANES 2011--2014, what is the association between self-reported lifetime history of:
+Among noninstitutionalized U.S. adults represented by NHANES 2011--2014, what is the causal effect of self-reported lifetime history of:
 
 \begin{enumerate}
     \item Stroke, and
@@ -95,7 +95,7 @@ Among noninstitutionalized U.S. adults represented by NHANES 2011--2014, what is
 
 \end{enumerate}
 
-and multiple indicators of healthcare access and utilization, including having a usual source of care and health insurance coverage?
+on multiple indicators of healthcare access and utilization, including having a usual source of care and health insurance coverage?
 
 Formally, for each exposure (stroke, TBI) we seek to estimate the \emph{population average treatment effect on the treated} (PATT)---the difference in healthcare access and utilization outcomes between:
 
@@ -108,9 +108,7 @@ Formally, for each exposure (stroke, TBI) we seek to estimate the \emph{populati
 
 generalized to the NHANES target population via survey weighting.
 
-\subsection{Hypotheses}
-
-\textbf{Primary hypotheses}
+\subsection{Primary Hypotheses}
 
 \begin{itemize}
     \item Adults with a history of TBI are less likely to have adequate healthcare access and utilization (e.g., less likely to have a usual place for care, more likely to lack coverage or have longer time since last visit).
@@ -119,21 +117,24 @@ generalized to the NHANES target population via survey weighting.
 
 \end{itemize}
 
-\textbf{Secondary hypothesis}
+\subsection{Planned Exploratory Analyses}
 
-\begin{itemize}
-    \item The magnitude and direction of these associations differ across subgroups defined by age, sex, race/ethnicity, education, and income-to-poverty ratio (i.e., effect modification by demographic and socioeconomic characteristics).
-
-\end{itemize}
+In addition to the primary hypotheses above, we will conduct planned exploratory analyses to
+assess whether the effects of (1) TBI history on healthcare access/utilization and
+(2) stroke history on healthcare access/utilization vary across key demographic and
+socioeconomic subgroups. These analyses are intended to characterize heterogeneity in
+associations and generate hypotheses for future work rather than to provide definitive
+subgroup-specific inference.
+We will evaluate effect modification by age, sex, race/ethnicity, education, and income-to-poverty ratio
 
 \subsection{Objectives}
 
 \begin{enumerate}
     \item Describe healthcare access and utilization indicators among U.S. adults overall and stratified by history of stroke and TBI.
 
-    \item Estimate the association (PATT) between stroke history and each healthcare access/utilization outcome, adjusting for observed confounders using propensity score matching combined with survey design-based analysis.
+    \item Estimate the population-wide average treatment effect on the treated (PATT) between stroke history and each healthcare access/utilization outcome, adjusting for observed confounders using propensity score matching combined with survey design-based analysis.
 
-    \item Estimate the analogous association for TBI.
+    \item Estimate the analogous causal effect for TBI.
 
     \item Explore effect modification by key demographic and socioeconomic variables.
 
@@ -147,7 +148,6 @@ The target population for inference is the U.S.\ noninstitutionalized civilian p
     \item Adults aged $\geq 20$ years for the stroke analysis (the age range for which stroke history was collected), and
 
     \item Adults aged $\geq 40$ years for the TBI analysis (the age range for which the TBI module was administered).
-
 \end{itemize}
 
 Findings will not generalize to:
@@ -329,7 +329,7 @@ These summaries will provide context for the matched analyses and help assess wh
 
 \subsection{Overview and Primary Design Features}
 
-This is an observational, cross-sectional study using existing NHANES data to estimate the association between lifetime neurologic injury (stroke, TBI) and healthcare access/utilization. The principal design elements are:
+This is an observational, cross-sectional study using existing NHANES data to estimate the causal effect of lifetime neurologic injury (stroke, TBI) on healthcare access/utilization. The principal design elements are:
 
 \begin{enumerate}
     \item Use of a nationally representative complex survey (NHANES) to enable population-level inference.
@@ -359,7 +359,7 @@ Based on prior literature and data availability, we identify the following as ke
 
 \end{itemize}
 
-We will treat age, sex, race/ethnicity, education, and income as candidate effect modifiers and will explore interactions in secondary analyses.
+We will treat age, sex, race/ethnicity, education, and income as candidate effect modifiers and will explore effect modification in secondary analyses.
 
 \subsection{Potential Unobserved Confounders}
 
@@ -383,7 +383,7 @@ We will use a structured approach to missing data:
 \begin{enumerate}
     \item \textbf{Missingness indicators.} For each covariate with missing values (e.g., RIDAGEYR, RIAGENDR, RIDRETH3, DMDEDUC2, INDFMPIR, alcohol\_abuse, smoking\_status, hypertension, diabetes, stroke\_history), we will create a binary indicator (e.g., \texttt{RIDAGEYR\_missing}) equal to 1 if the original value is missing and 0 otherwise. These indicators will be included in the propensity score model so that matching explicitly accounts for patterns of missingness.
 
-    \item \textbf{Deterministic value assignment for missing entries.} To ensure that all records have well-defined covariate values for propensity score estimation and matching, we will assign a fixed, internally consistent placeholder value to missing entries, while retaining the corresponding missingness indicators described above. Specifically, continuous variables (e.g., age, income-to-poverty ratio) will have missing entries replaced with the analytic-sample mean; categorical variables (e.g., sex, race/ethnicity, education, smoking\_status) will include an explicit ``Missing'' category; and binary health conditions (alcohol\_abuse, hypertension, diabetes, stroke\_history) will have missing entries replaced with the modal category. This approach is intended to preserve the analytic sample and allow the propensity score to adjust for missingness through the indicator variables, rather than relying on a model-based missing-data procedure.
+    \item \textbf{Deterministic value assignment for missing entries.} To ensure that all records have well-defined covariate values for propensity score estimation and matching, we will assign a fixed, internally consistent placeholder value to missing entries, while retaining the corresponding missingness indicators described above. Specifically, continuous variables (e.g., age, income-to-poverty ratio) will have missing entries replaced with a deterministic value (-9999); categorical variables (e.g., sex, race/ethnicity, education, smoking\_status) will include an explicit ``Missing'' category; and binary health conditions (alcohol\_abuse, hypertension, diabetes, stroke\_history) will have missing entries replaced with the modal category. This approach is intended to preserve the analytic sample and allow the propensity score to adjust for missingness through the indicator variables, rather than relying on a model-based missing-data procedure.
 
     \item \textbf{Exposures and primary outcomes.} Exposure variables (stroke\_exposed, tbi\_exposed) and primary outcomes will not be filled in; records with missing exposure or missing primary outcomes will be excluded from the analytic sample as described in Section~4.
 
@@ -445,7 +445,7 @@ We will assess covariate balance using the \texttt{cobalt} package in R. For eac
 We will select a final matching ratio (e.g., 1:1, 1:2, etc.) for each exposure based on:
 
 \begin{itemize}
-    \item Achieving SMD $< 0.10$ for all or nearly all covariates,
+    \item Achieving SMD $< 0.10$ for all prognostically relevant covariates,
 
     \item Minimizing the number of treated units discarded, and
 
@@ -456,26 +456,26 @@ We will select a final matching ratio (e.g., 1:1, 1:2, etc.) for each exposure b
 \paragraph{Chosen matching design.}
 We compared candidate fixed-ratio matches from 1:1 through 1:6 and selected the final ratio using only design-stage diagnostics (i.e., covariate balance, overlap, and retention), without examining any outcome variables. Based on the criteria above, we selected \textbf{1:4 matching} for both exposures because it achieved the best overall trade-off between covariate balance and retention of treated participants.
 
-For stroke, the 1:4 matched sample met the balance criterion across all covariates (max $|\text{SMD}| = 0.043$; 0 covariates with $|\text{SMD}| > 0.10$), retained all 431 treated participants, and yielded a total matched sample size of 2,155 for outcome modeling. For TBI, the 1:4 matched sample also met the balance criterion (max $|\text{SMD}| = 0.095$; 0 covariates with $|\text{SMD}| > 0.10$), retained all 948 treated participants, and yielded a total matched sample size of 4,740. All outcome analyses (Section~7) will be conducted using these 1:4 matched datasets.
+For stroke, the 1:4 matched sample met the balance criterion across all covariates (max $|\text{SMD}| = 0.091$; 1 covariate with $|\text{SMD}| > 0.05$), retained all 431 treated participants, and yielded a total matched sample size of 2,155 for outcome modeling. For TBI, the 1:4 matched sample also met the balance criterion (max $|\text{SMD}| = 0.093$; 4 covariates with $|\text{SMD}| > 0.05$), retained all 948 treated participants, and yielded a total matched sample size of 4,740. All outcome analyses (Section~7) will be conducted using these 1:4 matched datasets.
 
 \paragraph{Love plots (1:4 matching).}
-Figure~\ref{fig:love-stroke} and Figure~\ref{fig:love-tbi} display standardized mean differences (SMD) for each covariate before and after 1:4 propensity score matching for the stroke and TBI analyses, respectively. Values closer to zero indicate improved balance after matching. The vertical reference line at 0.10 denotes the a priori balance threshold. Love plots (and balance tables) for all evaluated ratios (1:1--1:6) will be summarized in the final manuscript and/or supplement.
+Figure~\ref{fig:love-stroke} and Figure~\ref{fig:love-tbi} display standardized mean differences (SMD) for each covariate before and after 1:4 propensity score matching for the stroke and TBI analyses, respectively. Values closer to zero indicate improved balance after matching. The vertical reference lines at $\pm0.10$ denote the acceptable balance threshold. Love plots (and balance tables) for all evaluated ratios (1:1--1:6) will be summarized in the final manuscript and/or supplement.
 
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=0.8\textwidth]{../matching/love_stroke_1_4.png}
-\caption{Covariate balance before and after 1:4 propensity score matching: stroke vs.\ no stroke. The vertical line at 0.10 indicates the balance threshold.}
+\caption{Covariate balance before and after 1:4 propensity score matching: stroke vs.\ no stroke. The vertical lines at $\pm0.10$ indicate the acceptable balance threshold.}
 \label{fig:love-stroke}
 \end{figure}
 
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=0.8\textwidth]{../matching/love_tbi_1_4.png}
-\caption{Covariate balance before and after 1:4 propensity score matching: TBI vs.\ no TBI. The vertical line at 0.10 indicates the balance threshold.}
+\caption{Covariate balance before and after 1:4 propensity score matching: TBI vs.\ no TBI. The vertical lines at $\pm0.10$ indicate the acceptable balance threshold.}
 \label{fig:love-tbi}
 \end{figure}
 
-Diagnostic plots and summary statistics will be included in the final manuscript to demonstrate successful balance in the matched samples.
+Diagnostic plots and summary statistics will be included in the final manuscript to empirically demonstrate balance in the matched samples.
 
 \subsection{Negative control balance check}
 \label{sec:neg-control}
@@ -504,7 +504,16 @@ We will interpret successful negative-control balance as SMD $<0.10$ and an odds
 If the negative control diagnostic indicates meaningful imbalance (e.g., SMD $\ge 0.10$ or an odds ratio materially different from 1 with a narrow confidence interval), we will treat this as evidence that the current PS specification/matching parameters may not have adequately balanced constructs correlated with unmeasured confounding. Without examining any primary or secondary outcome variables, we will consider design-stage revisions such as: (i) modifying the PS model to include additional pre-exposure behavioral covariates available in NHANES, (ii) tightening the caliper, and/or (iii) adjusting the matching ratio, and then re-assessing covariate balance. The final negative control diagnostic results will be reported alongside the main balance diagnostics.
 
 \paragraph{Results.}
-Table~\ref{tab:neg-control} presents the negative control diagnostic results for the 1:4 matched samples. For stroke, the SMD for marijuana ever-use was $<0.10$ and the odds ratio 95\% CI included 1, indicating successful balance on the negative control. For TBI, the SMD exceeded 0.10 and the odds ratio 95\% CI excluded 1, suggesting residual imbalance on constructs correlated with marijuana ever-use; per the prespecified response, design-stage revisions may be warranted for the TBI analysis.
+Table~\ref{tab:neg-control} presents the negative control diagnostic results for the 1:4 matched samples. For stroke, the SMD for marijuana ever-use was $<0.10$ and the odds ratio 95\% CI included 1, indicating successful balance on the negative control. For TBI, the SMD exceeded 0.10 and the odds ratio 95\% CI excluded 1, suggesting residual imbalance on constructs correlated with marijuana ever-use; per the prespecified response, we will revise the design of the TBI analysis to include marijuana ever-use.
+
+As before, the 1:4 matched sample met the balance criterion (max $|\text{SMD}| = 0.096$; 5 covariates with $|\text{SMD}| > 0.05$), retained all 948 treated participants, and yielded a total matched sample size of 4,740. A revised love plot is included in Figure \ref{fig:love-tbi-revised}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.8\textwidth]{../matching/love_tbi_1_4_revised.png}
+\caption{Covariate balance before and after 1:4 propensity score matching (including marijuana ever-use): TBI vs.\ no TBI. The vertical lines at $\pm0.10$ indicate the acceptable balance threshold.}
+\label{fig:love-tbi-revised}
+\end{figure}
 
 \begin{table}[htbp]
 \centering
@@ -559,7 +568,7 @@ All data management and analyses will be implemented in R, using the following c
 
 \subsection{Primary Analysis}
 
-Within each matched sample (stroke vs.\ no stroke; TBI vs.\ no TBI), we estimate the association between exposure status and each healthcare access/utilization outcome using interview-weighted regression models.
+Within each matched sample (stroke vs.\ no stroke; TBI vs.\ no TBI), we estimate the causal effect of exposure status on each healthcare access/utilization outcome using interview-weighted regression models.
 
 \paragraph{Model specification}
 
