@@ -4,8 +4,12 @@
 
 # private data
 data
+
 # literature
 literature
+
+# tex files
+*.tex
 
 #########
 ### R ###
