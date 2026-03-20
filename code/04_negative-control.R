@@ -227,9 +227,20 @@ base_matching_vars = c("RIDAGEYR", "RIAGENDR", "RIDRETH3", "INDFMPIR", "DMDEDUC2
 design_vars = c("SDMVPSU", "SDMVSTRA")
 sample_weight_var = "WTINT2YR"
 health_outcome_vars = c("alcohol_abuse", "smoking_status", "hypertension", "diabetes")
+missingness_vars = c(
+  "RIDAGEYR_missing", "RIAGENDR_missing", "RIDRETH3_missing", "INDFMPIR_missing", "DMDEDUC2_missing",
+  "alcohol_abuse_missing", "smoking_status_missing", "hypertension_missing",
+  "diabetes_missing", "stroke_history_missing"
+)
+existing_missingness_vars = missingness_vars[missingness_vars %in% names(tbi_matching_data)]
+tbi_missingness_vars_revised = existing_missingness_vars[existing_missingness_vars %in%
+  c(paste0(base_matching_vars, "_missing"),
+    paste0(health_outcome_vars, "_missing"),
+    "stroke_history_missing")]
 tbi_matching_vars_revised = c(
   base_matching_vars, design_vars, sample_weight_var,
-  health_outcome_vars, "stroke_history", "marijuana_ever", "marijuana_ever_missing"
+  health_outcome_vars, "stroke_history", tbi_missingness_vars_revised,
+  "marijuana_ever", "marijuana_ever_missing"
 )
 
 match_formula_tbi_revised = as.formula(paste(

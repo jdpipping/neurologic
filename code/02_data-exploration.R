@@ -166,9 +166,9 @@ stroke_history_mode = get_mode(master_data$stroke_history)
 # now impute missing values
 master_data = master_data |>
   mutate(
-    # numeric variables - impute with mean if missing
-    RIDAGEYR = ifelse(is.na(RIDAGEYR), mean(RIDAGEYR, na.rm = TRUE), RIDAGEYR),
-    INDFMPIR = ifelse(is.na(INDFMPIR), mean(INDFMPIR, na.rm = TRUE), INDFMPIR),
+    # Continuous variables - deterministic placeholder for missing (protocol: -9999)
+    RIDAGEYR = ifelse(is.na(RIDAGEYR), -9999, RIDAGEYR),
+    INDFMPIR = ifelse(is.na(INDFMPIR), -9999, INDFMPIR),
     # Categorical variables - add explicit Missing level if missing
     RIAGENDR = forcats::fct_explicit_na(factor(RIAGENDR), na_level = "Missing"),
     RIDRETH3 = forcats::fct_explicit_na(factor(RIDRETH3), na_level = "Missing"),
