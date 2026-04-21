@@ -73,6 +73,11 @@ match_formula_stroke = as.formula(paste("stroke_exposed ~",
 match_formula_tbi = as.formula(paste("tbi_exposed ~", 
                                      paste(tbi_matching_vars_all, collapse = " + ")))
 
+apply_caliper_penalty = function(distance_matrix, caliper, penalty = 10000) {
+  distance_matrix[distance_matrix > caliper] = distance_matrix[distance_matrix > caliper] + penalty
+  distance_matrix
+}
+
 #######################
 ### STROKE MATCHING ###
 #######################
@@ -120,18 +125,25 @@ for (ratio in 1:6) {
   control_logit = stroke_data$logit_ps[control_idx]
   ps_dist = abs(outer(treated_logit, control_logit, "-"))
   
-  # apply caliper penalty: add large value if distance > caliper (prevents matching)
-  ps_dist[ps_dist > ps_caliper_stroke] = ps_dist[ps_dist > ps_caliper_stroke] + 1000
+  # Penalize matches outside the threshold heavily while keeping the
+  # problem feasible when no exact caliper-respecting solution exists.
+  ps_dist = apply_caliper_penalty(ps_dist, ps_caliper_stroke)
   
   # perform optimal matching with custom distance matrix
-  match_obj = matchit(match_formula_stroke, data = stroke_data, method = "optimal", distance = ps_dist, ratio = ratio)
+  match_obj = tryCatch(
+    matchit(match_formula_stroke, data = stroke_data, method = "optimal", distance = ps_dist, ratio = ratio),
+    error = function(e) NULL
+  )
+  if (is.null(match_obj)) {
+    cat("Matching failed under the penalized caliper setup; skipping this ratio\n")
+    next
+  }
   
   # store results
   stroke_matches[[paste0("stroke_1_", ratio)]] = match_obj
   
   # extract matched data
   matched_data = match.data(match_obj)
-  
   # check how many treated units were discarded due to caliper
   n_discarded = n_treated - sum(matched_data$stroke_exposed == 1)
   
@@ -190,18 +202,25 @@ for (ratio in 1:6) {
   control_logit = tbi_data$logit_ps[control_idx]
   ps_dist = abs(outer(treated_logit, control_logit, "-"))
   
-  # apply caliper penalty: add large value if distance > caliper (prevents matching)
-  ps_dist[ps_dist > ps_caliper_tbi] = ps_dist[ps_dist > ps_caliper_tbi] + 1000
+  # Penalize matches outside the threshold heavily while keeping the
+  # problem feasible when no exact caliper-respecting solution exists.
+  ps_dist = apply_caliper_penalty(ps_dist, ps_caliper_tbi)
   
   # perform optimal matching with custom distance matrix
-  match_obj = matchit(match_formula_tbi, data = tbi_data, method = "optimal", distance = ps_dist, ratio = ratio)
+  match_obj = tryCatch(
+    matchit(match_formula_tbi, data = tbi_data, method = "optimal", distance = ps_dist, ratio = ratio),
+    error = function(e) NULL
+  )
+  if (is.null(match_obj)) {
+    cat("Matching failed under the penalized caliper setup; skipping this ratio\n")
+    next
+  }
   
   # store results
   tbi_matches[[paste0("tbi_1_", ratio)]] = match_obj
   
   # extract matched data
   matched_data = match.data(match_obj)
-  
   # check how many treated units were discarded due to caliper
   n_discarded = n_treated - sum(matched_data$tbi_exposed == 1)
   

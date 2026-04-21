@@ -15,7 +15,6 @@ library(MatchIt)
 
 # Load final matched datasets (1:4 matching, same as primary analysis)
 stroke_data = read_csv("data/matched/stroke_1_4.csv", show_col_types = FALSE)
-tbi_data = read_csv("data/matched/tbi_1_4.csv", show_col_types = FALSE)
 
 # Load matching data for revised TBI matching (with marijuana in PS model)
 matching_data = read_csv("data/clean/matching_data.csv", show_col_types = FALSE)
@@ -26,10 +25,6 @@ drug_data = read_csv("data/clean/drug_data.csv", show_col_types = FALSE)
 # Merge DUQ200 into matched data if not present (join on SEQN + year for correct cycle)
 if (!"DUQ200" %in% names(stroke_data)) {
   stroke_data = stroke_data |>
-    left_join(drug_data |> select(SEQN, year, DUQ200), by = c("SEQN", "year"))
-}
-if (!"DUQ200" %in% names(tbi_data)) {
-  tbi_data = tbi_data |>
     left_join(drug_data |> select(SEQN, year, DUQ200), by = c("SEQN", "year"))
 }
 
@@ -54,7 +49,76 @@ create_marijuana_ever = function(df) {
 }
 
 stroke_data = stroke_data |> create_marijuana_ever()
-tbi_data = tbi_data |> create_marijuana_ever()
+
+apply_caliper_penalty = function(distance_matrix, caliper, penalty = 10000) {
+  distance_matrix[distance_matrix > caliper] = distance_matrix[distance_matrix > caliper] + penalty
+  distance_matrix
+}
+
+build_original_tbi_match = function(matching_data, drug_data, ratio = 4) {
+  tbi_matching_data = matching_data
+  if (!"DUQ200" %in% names(tbi_matching_data)) {
+    tbi_matching_data = tbi_matching_data |>
+      left_join(drug_data |> select(SEQN, year, DUQ200), by = c("SEQN", "year"))
+  }
+
+  missingness_vars = c(
+    "RIDAGEYR_missing", "RIAGENDR_missing", "RIDRETH3_missing", "INDFMPIR_missing", "DMDEDUC2_missing",
+    "alcohol_abuse_missing", "smoking_status_missing", "hypertension_missing",
+    "diabetes_missing", "stroke_history_missing"
+  )
+  existing_missingness_vars = missingness_vars[missingness_vars %in% names(tbi_matching_data)]
+  base_matching_vars = c("RIDAGEYR", "RIAGENDR", "RIDRETH3", "INDFMPIR", "DMDEDUC2")
+  design_vars = c("SDMVPSU", "SDMVSTRA")
+  sample_weight_var = "WTINT2YR"
+  health_outcome_vars = c("alcohol_abuse", "smoking_status", "hypertension", "diabetes")
+  tbi_matching_vars = c(base_matching_vars, design_vars, sample_weight_var, health_outcome_vars, "stroke_history")
+  tbi_missingness_vars = existing_missingness_vars[existing_missingness_vars %in%
+    c(paste0(base_matching_vars, "_missing"),
+      paste0(health_outcome_vars, "_missing"),
+      "stroke_history_missing")]
+  tbi_matching_vars_all = c(tbi_matching_vars, tbi_missingness_vars)
+  match_formula_tbi = as.formula(paste("tbi_exposed ~", paste(tbi_matching_vars_all, collapse = " + ")))
+
+  tbi_matching_data = tbi_matching_data |>
+    filter(!is.na(tbi_exposed))
+
+  ps_model_tbi = glm(match_formula_tbi, data = tbi_matching_data, family = binomial)
+  tbi_matching_data$ps = predict(ps_model_tbi, type = "response")
+  tbi_matching_data$logit_ps = predict(ps_model_tbi, type = "link")
+
+  treated_logit = tbi_matching_data$logit_ps[tbi_matching_data$tbi_exposed == 1]
+  control_logit = tbi_matching_data$logit_ps[tbi_matching_data$tbi_exposed == 0]
+  ps_caliper = 0.2 * sqrt((sd(treated_logit, na.rm = TRUE)^2 + sd(control_logit, na.rm = TRUE)^2) / 2)
+
+  treated_idx = which(tbi_matching_data$tbi_exposed == 1)
+  control_idx = which(tbi_matching_data$tbi_exposed == 0)
+  ps_dist = abs(outer(tbi_matching_data$logit_ps[treated_idx], tbi_matching_data$logit_ps[control_idx], "-"))
+  ps_dist = apply_caliper_penalty(ps_dist, ps_caliper)
+
+  match_obj = tryCatch(
+    matchit(
+      match_formula_tbi,
+      data = tbi_matching_data,
+      method = "optimal",
+      distance = ps_dist,
+      ratio = ratio
+    ),
+    error = function(e) NULL
+  )
+
+  if (is.null(match_obj)) {
+    return(NULL)
+  }
+
+  match.data(match_obj) |>
+    create_marijuana_ever()
+}
+
+tbi_data = build_original_tbi_match(matching_data, drug_data)
+if (is.null(tbi_data)) {
+  cat("Original TBI 1:4 matching failed under the penalized caliper setup; skipping original TBI negative-control diagnostic.\n")
+}
 
 ###############################
 ### CREATE ANALYSIS WEIGHTS ###
@@ -68,11 +132,13 @@ stroke_data = stroke_data |>
     w_analysis = w_nhanes * weights
   )
 
-tbi_data = tbi_data |>
-  mutate(
-    w_nhanes = WTINT2YR / 2,
-    w_analysis = w_nhanes * weights
-  )
+if (!is.null(tbi_data)) {
+  tbi_data = tbi_data |>
+    mutate(
+      w_nhanes = WTINT2YR / 2,
+      w_analysis = w_nhanes * weights
+    )
+}
 
 ###################################
 ### NEGATIVE CONTROL DIAGNOSTIC ###
@@ -185,7 +251,7 @@ run_negative_control = function(df, exposure_var, dataset_name) {
 #######################
 
 stroke_neg = run_negative_control(stroke_data, "stroke_exposed", "stroke_1_4")
-tbi_neg = run_negative_control(tbi_data, "tbi_exposed", "tbi_1_4")
+tbi_neg = if (!is.null(tbi_data)) run_negative_control(tbi_data, "tbi_exposed", "tbi_1_4") else NULL
 
 ###############################################
 ### REVISED TBI MATCHING (marijuana in PS) ###
@@ -263,7 +329,7 @@ ps_caliper = 0.2 * spool
 treated_idx = which(tbi_matching_data$tbi_exposed == 1)
 control_idx = which(tbi_matching_data$tbi_exposed == 0)
 ps_dist = abs(outer(tbi_matching_data$logit_ps[treated_idx], tbi_matching_data$logit_ps[control_idx], "-"))
-ps_dist[ps_dist > ps_caliper] = ps_dist[ps_dist > ps_caliper] + 1000
+ps_dist = apply_caliper_penalty(ps_dist, ps_caliper)
 
 match_tbi_revised = matchit(
   match_formula_tbi_revised,
@@ -273,8 +339,9 @@ match_tbi_revised = matchit(
   ratio = 4
 )
 
-cat("Matched sample:", sum(match.data(match_tbi_revised)$tbi_exposed == 1), "treated,",
-    sum(match.data(match_tbi_revised)$tbi_exposed == 0), "controls\n")
+tbi_revised_data = match.data(match_tbi_revised)
+cat("Matched sample:", sum(tbi_revised_data$tbi_exposed == 1), "treated,",
+    sum(tbi_revised_data$tbi_exposed == 0), "controls\n")
 
 # Love plot
 love_tbi_revised = love.plot(
@@ -288,6 +355,13 @@ if (!dir.exists("matching")) {
 }
 ggsave("matching/love_tbi_1_4_revised.png", love_tbi_revised, width = 6, height = 4, dpi = 600)
 cat("Love plot saved: matching/love_tbi_1_4_revised.png\n")
+
+# Save revised matched dataset for protocol-specified primary outcome analysis
+if (!dir.exists("data/matched")) {
+  dir.create("data/matched", recursive = TRUE)
+}
+write_csv(tbi_revised_data, "data/matched/tbi_1_4_revised.csv")
+cat("Revised matched dataset saved: data/matched/tbi_1_4_revised.csv\n")
 
 ####################
 ### SAVE RESULTS ###

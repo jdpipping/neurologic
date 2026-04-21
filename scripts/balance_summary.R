@@ -33,7 +33,7 @@ run_match_stroke = function() {
   ct = d$logit_ps[d$stroke_exposed == 0]
   cal = 0.2 * sqrt((sd(tr)^2 + sd(ct)^2) / 2)
   dist = abs(outer(d$logit_ps[d$stroke_exposed == 1], d$logit_ps[d$stroke_exposed == 0], "-"))
-  dist[dist > cal] = dist[dist > cal] + 1000
+  dist[dist > cal] = dist[dist > cal] + 10000
   matchit(f, data = d, method = "optimal", distance = dist, ratio = 4)
 }
 
@@ -46,7 +46,7 @@ run_match_tbi = function() {
   ct = d$logit_ps[d$tbi_exposed == 0]
   cal = 0.2 * sqrt((sd(tr)^2 + sd(ct)^2) / 2)
   dist = abs(outer(d$logit_ps[d$tbi_exposed == 1], d$logit_ps[d$tbi_exposed == 0], "-"))
-  dist[dist > cal] = dist[dist > cal] + 1000
+  dist[dist > cal] = dist[dist > cal] + 10000
   matchit(f, data = d, method = "optimal", distance = dist, ratio = 4)
 }
 
@@ -72,7 +72,7 @@ run_match_tbi_revised = function() {
   ct = d$logit_ps[d$tbi_exposed == 0]
   cal = 0.2 * sqrt((sd(tr)^2 + sd(ct)^2) / 2)
   dist = abs(outer(d$logit_ps[d$tbi_exposed == 1], d$logit_ps[d$tbi_exposed == 0], "-"))
-  dist[dist > cal] = dist[dist > cal] + 1000
+  dist[dist > cal] = dist[dist > cal] + 10000
   matchit(f, data = d, method = "optimal", distance = dist, ratio = 4)
 }
 

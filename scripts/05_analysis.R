@@ -12,12 +12,219 @@ library(ggplot2)
 ### LOAD DATA ###
 #################
 
-# load matched datasets (1:4 matching)
-stroke_data = read_csv("data/matched/stroke_1_4.csv", show_col_types = FALSE)
-tbi_data = read_csv("data/matched/tbi_1_4.csv", show_col_types = FALSE)
+# Protocol-specified matched datasets:
+# - Stroke: selected 1:4 design
+# - TBI: revised 1:4 design after negative-control imbalance check
+stroke_match_path = "data/matched/stroke_1_4.csv"
+tbi_match_path = "data/matched/tbi_1_4_revised.csv"
+
+if (!file.exists(stroke_match_path)) {
+  stop("Missing stroke matched dataset: data/matched/stroke_1_4.csv")
+}
+if (!file.exists(tbi_match_path)) {
+  stop("Protocol requires revised TBI 1:4 matched data. Run scripts/04_negative-control.R to create data/matched/tbi_1_4_revised.csv")
+}
+
+stroke_data = read_csv(stroke_match_path, show_col_types = FALSE)
+tbi_data = read_csv(tbi_match_path, show_col_types = FALSE)
 
 cat("Stroke matched dataset:", nrow(stroke_data), "participants\n")
-cat("TBI matched dataset:", nrow(tbi_data), "participants\n")
+cat("TBI revised matched dataset:", nrow(tbi_data), "participants\n")
+
+# Primary outcomes and exposures
+primary_outcomes = c("usual_place", "any_insurance")
+stroke_exposure = "stroke_exposed"
+tbi_exposure = "tbi_exposed"
+design_vars = c("SDMVPSU", "SDMVSTRA")
+
+# Prespecified covariates for post-match residual imbalance check (|SMD| > 0.10)
+stroke_covariates = c(
+  "RIDAGEYR", "RIAGENDR", "RIDRETH3", "INDFMPIR", "DMDEDUC2",
+  "alcohol_abuse", "smoking_status", "hypertension", "diabetes",
+  "RIDAGEYR_missing", "RIAGENDR_missing", "RIDRETH3_missing", "INDFMPIR_missing", "DMDEDUC2_missing",
+  "alcohol_abuse_missing", "smoking_status_missing", "hypertension_missing", "diabetes_missing"
+)
+tbi_covariates = c(
+  "RIDAGEYR", "RIAGENDR", "RIDRETH3", "INDFMPIR", "DMDEDUC2",
+  "alcohol_abuse", "smoking_status", "hypertension", "diabetes", "stroke_history",
+  "RIDAGEYR_missing", "RIAGENDR_missing", "RIDRETH3_missing", "INDFMPIR_missing", "DMDEDUC2_missing",
+  "alcohol_abuse_missing", "smoking_status_missing", "hypertension_missing", "diabetes_missing", "stroke_history_missing",
+  "marijuana_ever", "marijuana_ever_missing"
+)
+
+##############################
+### HELPER FUNCTIONS       ###
+##############################
+
+weighted_mean = function(x, w) {
+  sum(w * x) / sum(w)
+}
+
+weighted_var = function(x, w) {
+  mu = weighted_mean(x, w)
+  sum(w * (x - mu)^2) / sum(w)
+}
+
+binary_smd = function(z, a, w) {
+  p1 = weighted_mean(z[a == 1], w[a == 1])
+  p0 = weighted_mean(z[a == 0], w[a == 0])
+  pooled_var = (p1 * (1 - p1) + p0 * (1 - p0)) / 2
+  if (!is.finite(pooled_var) || pooled_var <= 0) return(NA_real_)
+  abs((p1 - p0) / sqrt(pooled_var))
+}
+
+compute_abs_smd = function(df, var, exposure_var, weight_var = "weights", continuous_vars = c("RIDAGEYR", "INDFMPIR")) {
+  d = df |>
+    filter(
+      !is.na(.data[[var]]),
+      !is.na(.data[[exposure_var]]),
+      .data[[exposure_var]] %in% c(0, 1),
+      !is.na(.data[[weight_var]]),
+      is.finite(.data[[weight_var]]),
+      .data[[weight_var]] > 0
+    )
+
+  if (nrow(d) == 0) return(NA_real_)
+
+  a = d[[exposure_var]]
+  w = d[[weight_var]]
+  x = d[[var]]
+  if (sum(a == 1) == 0 || sum(a == 0) == 0) return(NA_real_)
+
+  is_continuous = is.numeric(x) && (var %in% continuous_vars)
+  if (is_continuous) {
+    m1 = weighted_mean(x[a == 1], w[a == 1])
+    m0 = weighted_mean(x[a == 0], w[a == 0])
+    v1 = weighted_var(x[a == 1], w[a == 1])
+    v0 = weighted_var(x[a == 0], w[a == 0])
+    pooled_sd = sqrt((v1 + v0) / 2)
+    if (!is.finite(pooled_sd) || pooled_sd <= 0) return(NA_real_)
+    return(abs((m1 - m0) / pooled_sd))
+  }
+
+  xf = as.factor(x)
+  levs = levels(xf)
+  smds = map_dbl(levs, function(lev) {
+    z = as.numeric(xf == lev)
+    binary_smd(z, a, w)
+  })
+  if (all(is.na(smds))) return(NA_real_)
+  max(smds, na.rm = TRUE)
+}
+
+find_imbalanced_covariates = function(df, exposure_var, candidate_vars, threshold = 0.10) {
+  covars = candidate_vars[candidate_vars %in% names(df)]
+  if (length(covars) == 0) {
+    return(list(imbalanced = character(0), smd_table = tibble(covariate = character(), abs_smd = double())))
+  }
+
+  if (requireNamespace("cobalt", quietly = TRUE)) {
+    balance_formula = as.formula(paste(exposure_var, "~", paste(covars, collapse = " + ")))
+    bal_obj = cobalt::bal.tab(
+      balance_formula,
+      data = df,
+      weights = df$weights,
+      method = "weighting",
+      estimand = "ATT",
+      s.d.denom = "pooled",
+      continuous = "std",
+      binary = "std",
+      quick = FALSE
+    )
+    bal_df = as.data.frame(bal_obj$Balance)
+    bal_df$term = rownames(bal_obj$Balance)
+    diff_col = if ("Diff.Adj" %in% names(bal_df)) "Diff.Adj" else "Diff.Un"
+    bal_df = bal_df |>
+      mutate(abs_smd = abs(.data[[diff_col]]))
+
+    map_term_to_covariate = function(term) {
+      hits = covars[term == covars | startsWith(term, paste0(covars, "_"))]
+      if (length(hits) == 0) return(term)
+      hits[which.max(nchar(hits))]
+    }
+
+    smd_table = bal_df |>
+      mutate(covariate = map_chr(term, map_term_to_covariate)) |>
+      group_by(covariate) |>
+      summarize(
+        abs_smd = if (all(is.na(abs_smd))) NA_real_ else max(abs_smd, na.rm = TRUE),
+        .groups = "drop"
+      )
+
+    smd_table = tibble(covariate = covars) |>
+      left_join(smd_table, by = "covariate") |>
+      mutate(imbalanced = is.finite(abs_smd) & abs_smd > threshold)
+  } else {
+    # Fallback when cobalt is unavailable
+    smd_table = tibble(
+      covariate = covars,
+      abs_smd = map_dbl(covars, ~ compute_abs_smd(df, .x, exposure_var, weight_var = "weights"))
+    ) |>
+      mutate(imbalanced = is.finite(abs_smd) & abs_smd > threshold)
+  }
+
+  list(
+    imbalanced = smd_table |> filter(imbalanced) |> arrange(desc(abs_smd)) |> pull(covariate),
+    smd_table = smd_table
+  )
+}
+
+summarize_weight_diagnostics = function(df, dataset_name, weight_var = "w_analysis") {
+  w = df[[weight_var]]
+  w = w[is.finite(w) & !is.na(w) & w > 0]
+  if (length(w) == 0) {
+    return(tibble(
+      dataset = dataset_name,
+      n_total = nrow(df),
+      n_positive_weights = 0,
+      min_weight = NA_real_,
+      p01_weight = NA_real_,
+      median_weight = NA_real_,
+      p99_weight = NA_real_,
+      max_weight = NA_real_,
+      mean_weight = NA_real_,
+      sd_weight = NA_real_,
+      ess = NA_real_,
+      ess_ratio = NA_real_
+    ))
+  }
+
+  ess_val = (sum(w)^2) / sum(w^2)
+  tibble(
+    dataset = dataset_name,
+    n_total = nrow(df),
+    n_positive_weights = length(w),
+    min_weight = min(w),
+    p01_weight = as.numeric(quantile(w, 0.01)),
+    median_weight = median(w),
+    p99_weight = as.numeric(quantile(w, 0.99)),
+    max_weight = max(w),
+    mean_weight = mean(w),
+    sd_weight = sd(w),
+    ess = ess_val,
+    ess_ratio = ess_val / length(w)
+  )
+}
+
+filter_protocol_eligible = function(df, exposure_var, cohort_label) {
+  required_cols = c(exposure_var, "WTINT2YR", "weights", design_vars)
+  missing_cols = setdiff(required_cols, names(df))
+  if (length(missing_cols) > 0) {
+    stop(paste0(cohort_label, " is missing required protocol variables: ", paste(missing_cols, collapse = ", ")))
+  }
+
+  n_before = nrow(df)
+  d = df |>
+    filter(
+      !is.na(.data[[exposure_var]]),
+      .data[[exposure_var]] %in% c(0, 1),
+      !is.na(WTINT2YR), is.finite(WTINT2YR), WTINT2YR > 0,
+      !is.na(weights), is.finite(weights), weights > 0,
+      !is.na(.data[[design_vars[1]]]), !is.na(.data[[design_vars[2]]])
+    )
+  cat(cohort_label, "participants eligible for survey analysis:", nrow(d), "of", n_before, "\n")
+  d
+}
 
 ##############################
 ### CREATE OUTCOME VARIABLES #
@@ -80,12 +287,28 @@ tbi_data = tbi_data |>
 ### STROKE ANALYSIS ###
 #######################
 
-cat("\n=== STROKE ANALYSIS ===\n")
+# Enforce protocol inclusion criteria for valid survey design-based outcome analysis
+stroke_data = filter_protocol_eligible(stroke_data, stroke_exposure, "Stroke")
+tbi_data = filter_protocol_eligible(tbi_data, tbi_exposure, "TBI")
 
-# Define primary outcomes and exposure
-primary_outcomes = c("usual_place", "any_insurance")
-stroke_exposure = "stroke_exposed"
-design_vars = c("SDMVPSU", "SDMVSTRA")
+# Post-match imbalance check for prespecified covariates (protocol robustness rule)
+stroke_balance = find_imbalanced_covariates(stroke_data, stroke_exposure, stroke_covariates, threshold = 0.10)
+tbi_balance = find_imbalanced_covariates(tbi_data, tbi_exposure, tbi_covariates, threshold = 0.10)
+
+stroke_adjustment_vars = stroke_balance$imbalanced
+tbi_adjustment_vars = tbi_balance$imbalanced
+
+cat("\n=== POST-MATCH COVARIATE BALANCE CHECK (|SMD| > 0.10) ===\n")
+cat("Stroke imbalanced covariates:", ifelse(length(stroke_adjustment_vars) == 0, "None", paste(stroke_adjustment_vars, collapse = ", ")), "\n")
+cat("TBI imbalanced covariates:", ifelse(length(tbi_adjustment_vars) == 0, "None", paste(tbi_adjustment_vars, collapse = ", ")), "\n")
+
+balance_smd_table = bind_rows(
+  stroke_balance$smd_table |> mutate(dataset = "stroke_1_4"),
+  tbi_balance$smd_table |> mutate(dataset = "tbi_1_4_revised")
+) |>
+  relocate(dataset, covariate, abs_smd, imbalanced)
+
+cat("\n=== STROKE ANALYSIS ===\n")
 
 stroke_results_list = list()
 
@@ -94,7 +317,12 @@ for (outcome in primary_outcomes) {
   
   # Filter to complete cases for this outcome
   stroke_complete = stroke_data |>
-    filter(!is.na(.data[[outcome]]), !is.na(.data[[stroke_exposure]]))
+    filter(
+      !is.na(.data[[outcome]]),
+      !is.na(.data[[stroke_exposure]]),
+      !is.na(w_analysis), is.finite(w_analysis), w_analysis > 0,
+      !is.na(.data[[design_vars[1]]]), !is.na(.data[[design_vars[2]]])
+    )
   
   cat("Complete cases:", nrow(stroke_complete), "\n")
   
@@ -142,6 +370,41 @@ for (outcome in primary_outcomes) {
   beta1 = exposure_coef["Estimate"]
   se_beta1 = exposure_coef["Std. Error"]
   p_unadj = exposure_coef["Pr(>|t|)"]
+
+  # Protocol robustness check: if post-match imbalance remains (|SMD| > 0.10),
+  # fit an adjusted outcome model including imbalanced prespecified covariates.
+  adj_or = NA_real_
+  adj_or_ci_lower = NA_real_
+  adj_or_ci_upper = NA_real_
+  adj_p_unadj = NA_real_
+  adj_vars_for_model = character(0)
+  stroke_adjustment_vars_present = stroke_adjustment_vars[stroke_adjustment_vars %in% names(stroke_complete)]
+  if (length(stroke_adjustment_vars_present) > 0) {
+    stroke_adjustment_vars_present = stroke_adjustment_vars_present[
+      map_lgl(stroke_adjustment_vars_present, ~ any(!is.na(stroke_complete[[.x]])))
+    ]
+    if (length(stroke_adjustment_vars_present) > 0) {
+      adjusted_formula = as.formula(
+        paste(outcome, "~", stroke_exposure, "+", paste(stroke_adjustment_vars_present, collapse = " + "))
+      )
+      adjusted_model = tryCatch(
+        svyglm(formula = adjusted_formula, design = svy_design, family = quasibinomial(link = "logit")),
+        error = function(e) NULL
+      )
+      if (!is.null(adjusted_model)) {
+        adjusted_coef = summary(adjusted_model)$coefficients
+        if (stroke_exposure %in% rownames(adjusted_coef)) {
+          beta1_adj = adjusted_coef[stroke_exposure, "Estimate"]
+          se_beta1_adj = adjusted_coef[stroke_exposure, "Std. Error"]
+          adj_or = exp(beta1_adj)
+          adj_or_ci_lower = exp(beta1_adj - 1.96 * se_beta1_adj)
+          adj_or_ci_upper = exp(beta1_adj + 1.96 * se_beta1_adj)
+          adj_p_unadj = adjusted_coef[stroke_exposure, "Pr(>|t|)"]
+          adj_vars_for_model = stroke_adjustment_vars_present
+        }
+      }
+    }
+  }
   
   # Compute OR and 95% CI on log-odds scale, then transform
   log_or = beta1
@@ -172,7 +435,6 @@ for (outcome in primary_outcomes) {
   # For SEs, use delta method
   vcov_model = vcov(svy_model)
   se_beta0 = sqrt(vcov_model[1, 1])
-  se_beta1_val = sqrt(vcov_model[beta1_idx, beta1_idx])
   cov_beta0_beta1 = vcov_model[1, beta1_idx]
   
   # SE for prob_0 = expit(beta0)
@@ -206,6 +468,13 @@ for (outcome in primary_outcomes) {
     rd = rd,
     rd_ci_lower = rd_ci_lower,
     rd_ci_upper = rd_ci_upper,
+    adjusted_model_run = length(adj_vars_for_model) > 0,
+    n_adjustment_covariates = length(adj_vars_for_model),
+    adjustment_covariates = ifelse(length(adj_vars_for_model) > 0, paste(adj_vars_for_model, collapse = ";"), ""),
+    or_adj = adj_or,
+    or_adj_ci_lower = adj_or_ci_lower,
+    or_adj_ci_upper = adj_or_ci_upper,
+    p_unadj_adj_model = adj_p_unadj,
     ratio = 4,
     match_type = "stroke_1_4",
     stringsAsFactors = FALSE
@@ -221,6 +490,10 @@ for (outcome in primary_outcomes) {
       "Unexposed:", round(prob_0, 3), "\n")
   cat("Risk difference:", round(rd, 4), 
       "95% CI: [", round(rd_ci_lower, 4), ",", round(rd_ci_upper, 4), "]\n")
+  if (length(adj_vars_for_model) > 0) {
+    cat("Adjusted robustness model OR:", round(adj_or, 3),
+        "95% CI: [", round(adj_or_ci_lower, 3), ",", round(adj_or_ci_upper, 3), "]\n")
+  }
 }
 
 # Combine stroke results
@@ -236,9 +509,6 @@ if (length(stroke_results_list) > 0) {
 
 cat("\n=== TBI ANALYSIS ===\n")
 
-# Define exposure
-tbi_exposure = "tbi_exposed"
-
 tbi_results_list = list()
 
 for (outcome in primary_outcomes) {
@@ -246,7 +516,12 @@ for (outcome in primary_outcomes) {
   
   # Filter to complete cases for this outcome
   tbi_complete = tbi_data |>
-    filter(!is.na(.data[[outcome]]), !is.na(.data[[tbi_exposure]]))
+    filter(
+      !is.na(.data[[outcome]]),
+      !is.na(.data[[tbi_exposure]]),
+      !is.na(w_analysis), is.finite(w_analysis), w_analysis > 0,
+      !is.na(.data[[design_vars[1]]]), !is.na(.data[[design_vars[2]]])
+    )
   
   cat("Complete cases:", nrow(tbi_complete), "\n")
   
@@ -293,6 +568,41 @@ for (outcome in primary_outcomes) {
   beta1 = exposure_coef["Estimate"]
   se_beta1 = exposure_coef["Std. Error"]
   p_unadj = exposure_coef["Pr(>|t|)"]
+
+  # Protocol robustness check: if post-match imbalance remains (|SMD| > 0.10),
+  # fit an adjusted outcome model including imbalanced prespecified covariates.
+  adj_or = NA_real_
+  adj_or_ci_lower = NA_real_
+  adj_or_ci_upper = NA_real_
+  adj_p_unadj = NA_real_
+  adj_vars_for_model = character(0)
+  tbi_adjustment_vars_present = tbi_adjustment_vars[tbi_adjustment_vars %in% names(tbi_complete)]
+  if (length(tbi_adjustment_vars_present) > 0) {
+    tbi_adjustment_vars_present = tbi_adjustment_vars_present[
+      map_lgl(tbi_adjustment_vars_present, ~ any(!is.na(tbi_complete[[.x]])))
+    ]
+    if (length(tbi_adjustment_vars_present) > 0) {
+      adjusted_formula = as.formula(
+        paste(outcome, "~", tbi_exposure, "+", paste(tbi_adjustment_vars_present, collapse = " + "))
+      )
+      adjusted_model = tryCatch(
+        svyglm(formula = adjusted_formula, design = svy_design, family = quasibinomial(link = "logit")),
+        error = function(e) NULL
+      )
+      if (!is.null(adjusted_model)) {
+        adjusted_coef = summary(adjusted_model)$coefficients
+        if (tbi_exposure %in% rownames(adjusted_coef)) {
+          beta1_adj = adjusted_coef[tbi_exposure, "Estimate"]
+          se_beta1_adj = adjusted_coef[tbi_exposure, "Std. Error"]
+          adj_or = exp(beta1_adj)
+          adj_or_ci_lower = exp(beta1_adj - 1.96 * se_beta1_adj)
+          adj_or_ci_upper = exp(beta1_adj + 1.96 * se_beta1_adj)
+          adj_p_unadj = adjusted_coef[tbi_exposure, "Pr(>|t|)"]
+          adj_vars_for_model = tbi_adjustment_vars_present
+        }
+      }
+    }
+  }
   
   # Compute OR and 95% CI
   log_or = beta1
@@ -316,7 +626,6 @@ for (outcome in primary_outcomes) {
   # SEs using delta method
   vcov_model = vcov(svy_model)
   se_beta0 = sqrt(vcov_model[1, 1])
-  se_beta1_val = sqrt(vcov_model[beta1_idx, beta1_idx])
   cov_beta0_beta1 = vcov_model[1, beta1_idx]
   
   prob_se_0 = prob_0 * (1 - prob_0) * se_beta0
@@ -347,8 +656,15 @@ for (outcome in primary_outcomes) {
     rd = rd,
     rd_ci_lower = rd_ci_lower,
     rd_ci_upper = rd_ci_upper,
+    adjusted_model_run = length(adj_vars_for_model) > 0,
+    n_adjustment_covariates = length(adj_vars_for_model),
+    adjustment_covariates = ifelse(length(adj_vars_for_model) > 0, paste(adj_vars_for_model, collapse = ";"), ""),
+    or_adj = adj_or,
+    or_adj_ci_lower = adj_or_ci_lower,
+    or_adj_ci_upper = adj_or_ci_upper,
+    p_unadj_adj_model = adj_p_unadj,
     ratio = 4,
-    match_type = "tbi_1_4",
+    match_type = "tbi_1_4_revised",
     stringsAsFactors = FALSE
   )
   
@@ -362,6 +678,10 @@ for (outcome in primary_outcomes) {
       "Unexposed:", round(prob_0, 3), "\n")
   cat("Risk difference:", round(rd, 4), 
       "95% CI: [", round(rd_ci_lower, 4), ",", round(rd_ci_upper, 4), "]\n")
+  if (length(adj_vars_for_model) > 0) {
+    cat("Adjusted robustness model OR:", round(adj_or, 3),
+        "95% CI: [", round(adj_or_ci_lower, 3), ",", round(adj_or_ci_upper, 3), "]\n")
+  }
 }
 
 # Combine TBI results
@@ -410,6 +730,19 @@ if (!dir.exists("results")) {
   dir.create("results")
 }
 
+# Save protocol diagnostics: residual covariate imbalance and weight summaries
+if (nrow(balance_smd_table) > 0) {
+  write_csv(balance_smd_table, "results/postmatch_balance_smd.csv")
+  cat("Post-match SMD diagnostics saved to: results/postmatch_balance_smd.csv\n")
+}
+
+weight_diagnostics = bind_rows(
+  summarize_weight_diagnostics(stroke_data, "stroke_1_4"),
+  summarize_weight_diagnostics(tbi_data, "tbi_1_4_revised")
+)
+write_csv(weight_diagnostics, "results/weight_diagnostics.csv")
+cat("Weight diagnostics saved to: results/weight_diagnostics.csv\n")
+
 # Save results
 if (nrow(stroke_results) > 0) {
   write_csv(stroke_results, "results/stroke_primary_results.csv")
@@ -429,6 +762,31 @@ if (nrow(stroke_results) > 0 || nrow(tbi_results) > 0) {
   )
   write_csv(all_results, "results/results.csv")
   cat("All results saved to: results/results.csv\n")
+
+  primary_full_table = all_results |>
+    mutate(
+      outcome_label = case_when(
+        outcome == "usual_place" ~ "Usual place for healthcare",
+        outcome == "any_insurance" ~ "Any health insurance coverage",
+        TRUE ~ outcome
+      ),
+      exposure_label = case_when(
+        exposure_type == "stroke" ~ "Stroke vs No Stroke",
+        exposure_type == "tbi" ~ "TBI vs No TBI",
+        TRUE ~ exposure_type
+      )
+    ) |>
+    select(
+      exposure_type, exposure_label, outcome, outcome_label, n,
+      or, or_ci_lower, or_ci_upper, p_unadj, p_bonf,
+      prob_exposed, prob_unexposed, rd, rd_ci_lower, rd_ci_upper,
+      adjusted_model_run, n_adjustment_covariates, adjustment_covariates,
+      or_adj, or_adj_ci_lower, or_adj_ci_upper, p_unadj_adj_model,
+      ratio, match_type
+    )
+
+  write_csv(primary_full_table, "results/primary_full_results_table.csv")
+  cat("Primary full table saved to: results/primary_full_results_table.csv\n")
 }
 
 #####################
@@ -501,7 +859,7 @@ if (nrow(tbi_results) > 0) {
   
   # Save as HTML table
   tbi_table_html = tbi_table |>
-    kbl(caption = "Primary Analysis Results: TBI vs. No TBI (1:4 Matching)", 
+    kbl(caption = "Primary Analysis Results: TBI vs. No TBI (Revised 1:4 Matching)", 
         align = c("l", "c", "c", "c", "c", "c"),
         row.names = FALSE) |>
     kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"),
@@ -595,7 +953,7 @@ if (nrow(tbi_results) > 0) {
                       guide = "none") +
     labs(
       title = "TBI vs. No TBI: Healthcare Access Outcomes",
-      subtitle = "Odds ratios with 95% confidence intervals (1:4 matching)",
+      subtitle = "Odds ratios with 95% confidence intervals (revised 1:4 matching)",
       x = "Odds Ratio (log scale)",
       y = ""
     ) +
@@ -659,21 +1017,22 @@ cat("\n=== SUMMARY OF RESULTS ===\n")
 if (nrow(stroke_results) > 0) {
   cat("\n--- Stroke Results Summary ---\n")
   print(stroke_results |> 
-        select(outcome, or, or_ci_lower, or_ci_upper, p_unadj, p_bonf) |>
-        mutate(across(c(or, or_ci_lower, or_ci_upper, p_unadj, p_bonf), ~ round(.x, 4))))
+        select(outcome, or, or_ci_lower, or_ci_upper, p_unadj, p_bonf, or_adj, or_adj_ci_lower, or_adj_ci_upper, p_unadj_adj_model) |>
+        mutate(across(where(is.numeric), ~ round(.x, 4))))
 }
 
 # Print summary for TBI
 if (nrow(tbi_results) > 0) {
   cat("\n--- TBI Results Summary ---\n")
   print(tbi_results |> 
-        select(outcome, or, or_ci_lower, or_ci_upper, p_unadj, p_bonf) |>
-        mutate(across(c(or, or_ci_lower, or_ci_upper, p_unadj, p_bonf), ~ round(.x, 4))))
+        select(outcome, or, or_ci_lower, or_ci_upper, p_unadj, p_bonf, or_adj, or_adj_ci_lower, or_adj_ci_upper, p_unadj_adj_model) |>
+        mutate(across(where(is.numeric), ~ round(.x, 4))))
 }
 
 cat("\n=== ANALYSIS COMPLETE ===\n")
 cat("Review results/ directory for detailed output files\n")
-cat("  - CSV files: stroke_primary_results.csv, tbi_primary_results.csv\n")
+cat("  - CSV files: stroke_primary_results.csv, tbi_primary_results.csv, results.csv, primary_full_results_table.csv\n")
+cat("  - Diagnostics: postmatch_balance_smd.csv, weight_diagnostics.csv\n")
 cat("  - HTML tables: stroke_results_table.html, tbi_results_table.html\n")
 cat("  - Plots: stroke_forest_plot.png, tbi_forest_plot.png, stroke_weights.png, tbi_weights.png\n")
 cat("Review matching/ directory for matching diagnostics (love plots)\n")

@@ -47,23 +47,20 @@ master_data = master_data |>
 # create health outcome variables for matching
 master_data = master_data |>
   mutate(
-    # alcohol abuse: ALQ141Q - number of days with 5+ drinks in past year
-    # create binary indicator: 1 if any days with 5+ drinks in past year, 0 otherwise
-    # Note: ALQ141Q is only asked if ALQ151 (ever had 5+ drinks) = 1
-    # ALQ151: 1=Yes (ever had 5+ drinks), 2=No (never had 5+ drinks), 7=Refused, 9=Don't know
-    # ALQ141Q: number of days (0-777), 999=Refused/Don't know
+    # alcohol abuse: ALQ141Q - number of days with 4/5+ drinks in past year
+    # create binary indicator: 1 if any days with 4/5+ drinks in past year, 0 otherwise
+    # Note: ALQ151 is a different lifetime question and should not gate this variable.
+    # ALQ141Q: 0 = none, positive values = any heavy-drinking days,
+    # 777/999 = refused/don't know.
+    # If ALQ141Q is structurally missing because there was no past-year drinking
+    # (ALQ120Q = 0), classify as 0.
     alcohol_abuse = case_when(
-      # If never had 5+ drinks (ALQ151 = 2), then no alcohol abuse
-      ALQ151 == 2 ~ 0,
-      # If ever had 5+ drinks and had some days in past year (ALQ141Q > 0, not 999)
-      ALQ151 == 1 & ALQ141Q > 0 & ALQ141Q != 999 ~ 1,
-      # If ever had 5+ drinks but 0 days in past year (ALQ141Q = 0)
-      ALQ151 == 1 & ALQ141Q == 0 ~ 0,
-      # If ever had 5+ drinks but ALQ141Q is missing or 999 (refused/don't know)
-      ALQ151 == 1 & (is.na(ALQ141Q) | ALQ141Q == 999) ~ NA_real_,
-      # Refused or don't know for ever had 5+ drinks question
-      ALQ151 == 7 | ALQ151 == 9 ~ NA_real_,
-      TRUE ~ NA_real_  # missing
+      ALQ141Q > 0 & !ALQ141Q %in% c(777, 999) ~ 1,
+      ALQ141Q == 0 ~ 0,
+      ALQ141Q %in% c(777, 999) ~ NA_real_,
+      ALQ120Q == 0 ~ 0,
+      ALQ120Q %in% c(777, 999) ~ NA_real_,
+      TRUE ~ NA_real_
     ),
     
     # smoking: SMQ040 - current smoking status
@@ -119,6 +116,11 @@ master_data = master_data |>
                             levels = c("Not at all", "Some days", "Every day", "Refused"))
   )
 
+# Preserve a pre-imputation copy for descriptive summaries so continuous
+# variables are summarized on their original scale rather than the matching
+# sentinel values used below.
+descriptive_data = master_data
+
 ################################
 ### MISSINGNESS & IMPUTATION ###
 ################################
@@ -170,11 +172,11 @@ master_data = master_data |>
     RIDAGEYR = ifelse(is.na(RIDAGEYR), -9999, RIDAGEYR),
     INDFMPIR = ifelse(is.na(INDFMPIR), -9999, INDFMPIR),
     # Categorical variables - add explicit Missing level if missing
-    RIAGENDR = forcats::fct_explicit_na(factor(RIAGENDR), na_level = "Missing"),
-    RIDRETH3 = forcats::fct_explicit_na(factor(RIDRETH3), na_level = "Missing"),
-    DMDEDUC2 = forcats::fct_explicit_na(factor(DMDEDUC2), na_level = "Missing"),
+    RIAGENDR = forcats::fct_na_value_to_level(factor(RIAGENDR), level = "Missing"),
+    RIDRETH3 = forcats::fct_na_value_to_level(factor(RIDRETH3), level = "Missing"),
+    DMDEDUC2 = forcats::fct_na_value_to_level(factor(DMDEDUC2), level = "Missing"),
     # Health outcomes - add explicit Missing level if missing
-    smoking_status = forcats::fct_explicit_na(smoking_status, na_level = "Missing"),
+    smoking_status = forcats::fct_na_value_to_level(smoking_status, level = "Missing"),
     # Binary health outcomes - impute with mode (most common value) if missing
     alcohol_abuse = ifelse(is.na(alcohol_abuse), alcohol_mode, alcohol_abuse),
     hypertension = ifelse(is.na(hypertension), hypertension_mode, hypertension),
@@ -236,23 +238,26 @@ cat("TBI treated/control ratio:", round(tbi_ratio, 3), "\n")
 cat("\n=== DEMOGRAPHIC CHARACTERISTICS ===\n")
 
 # overall demographics
-overall_demo = CreateTableOne(data = master_data, 
+overall_demo = CreateTableOne(data = descriptive_data, 
                                vars = c("RIDAGEYR", "RIAGENDR", "RIDRETH3", "DMDEDUC2", "INDFMPIR"),
-                               factorVars = c("RIAGENDR", "RIDRETH3", "DMDEDUC2"))
+                               factorVars = c("RIAGENDR", "RIDRETH3", "DMDEDUC2"),
+                               includeNA = TRUE)
 print(overall_demo)
 
 # by stroke status
-stroke_demo = CreateTableOne(data = master_data, 
+stroke_demo = CreateTableOne(data = descriptive_data, 
                             vars = c("RIDAGEYR", "RIAGENDR", "RIDRETH3", "DMDEDUC2", "INDFMPIR"),
                             factorVars = c("RIAGENDR", "RIDRETH3", "DMDEDUC2"),
-                            strata = "stroke_exposed")
+                            strata = "stroke_exposed",
+                            includeNA = TRUE)
 print(stroke_demo)
 
 # by tbi status
-tbi_demo = CreateTableOne(data = master_data, 
+tbi_demo = CreateTableOne(data = descriptive_data, 
                           vars = c("RIDAGEYR", "RIAGENDR", "RIDRETH3", "DMDEDUC2", "INDFMPIR"),
                           factorVars = c("RIAGENDR", "RIDRETH3", "DMDEDUC2"),
-                          strata = "tbi_exposed")
+                          strata = "tbi_exposed",
+                          includeNA = TRUE)
 print(tbi_demo)
 
 

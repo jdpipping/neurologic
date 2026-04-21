@@ -70,7 +70,7 @@ This study utilizes data from the **National Health and Nutrition Examination Su
 
 ## Analysis Pipeline
 
-### Step 1: Data Preparation (`code/01_data-prep.R`)
+### Step 1: Data Preparation (`scripts/01_data-prep.R`)
 
 **Purpose**: Load and merge NHANES datasets from 2011-2012 and 2013-2014 cycles
 
@@ -95,7 +95,7 @@ This study utilizes data from the **National Health and Nutrition Examination Su
    - `data/clean/master_data.csv` (19,931 participants, 324 variables)
    - Individual datasets: `demo_data.csv`, `hiq_data.csv`, `huq_data.csv`, `stroke_data.csv`, `tbi_data.csv`
 
-### Step 2: Data Exploration (`code/02_data-exploration.R`)
+### Step 2: Data Exploration (`scripts/02_data-exploration.R`)
 
 **Purpose**: Create exposure and health outcome variables, handle missingness, prepare data for matching
 
@@ -132,7 +132,7 @@ This study utilizes data from the **National Health and Nutrition Examination Su
 5. **Save Output**:
    - `data/clean/matching_data.csv` (19,931 participants, 338 variables)
 
-### Step 3: Propensity Score Matching (`code/03_matching.R`)
+### Step 3: Propensity Score Matching (`scripts/03_matching.R`)
 
 **Purpose**: Match exposed and unexposed participants on demographics and health outcomes
 
@@ -190,7 +190,7 @@ This study utilizes data from the **National Health and Nutrition Examination Su
    - Love plots: `matching/love_tbi_1_1.png` through `love_tbi_1_6.png` (6 files)
    - Love plot (revised TBI): `matching/love_tbi_1_4_revised.png` (TBI 1:4 with marijuana in PS, from Step 4)
 
-### Step 4: Negative Control Balance Check (`code/04_negative-control.R`)
+### Step 4: Negative Control Balance Check (`scripts/04_negative-control.R`)
 
 **Purpose**: Post-matching diagnostic for residual confounding using marijuana ever-use as a falsification variable (not in PS model)
 
@@ -204,7 +204,7 @@ This study utilizes data from the **National Health and Nutrition Examination Su
 5. **Output**: `results/negative_control_results.csv`
 6. **Revised TBI matching** (when TBI shows imbalance): Re-run 1:4 TBI matching with marijuana_ever in the PS model; save `matching/love_tbi_1_4_revised.png`
 
-### Step 5: Outcome Analysis (`code/05_analysis.R`)
+### Step 5: Outcome Analysis (`scripts/05_analysis.R`)
 
 **Purpose**: Estimate associations between exposure (stroke/TBI) and healthcare access/utilization outcomes using survey-weighted regression models
 
@@ -213,7 +213,7 @@ This study utilizes data from the **National Health and Nutrition Examination Su
 1. **Load Matched Data**:
    - Load 1:4 matched datasets (final matching ratio)
    - Stroke: `data/matched/stroke_1_4.csv` (2,155 participants)
-   - TBI: `data/matched/tbi_1_4.csv` (4,740 participants)
+   - TBI: `data/matched/tbi_1_4_revised.csv` (4,740 participants)
 
 2. **Create Outcome Variables**:
    - `usual_place`: Binary (1 = has usual place for healthcare, 0 = no usual place)
@@ -263,78 +263,79 @@ This study utilizes data from the **National Health and Nutrition Examination Su
 
 ### Analysis Results (1:4 Matching)
 
-**Stroke Analysis** (n = 2,150-2,155):
-- **Usual place for healthcare**: OR = 1.64 (95% CI: 0.84, 3.18), p = 0.157 (Bonf adj: 0.313)
+**Stroke Analysis** (n = 2,151-2,155):
+- **Usual place for healthcare**: OR = 1.70 (95% CI: 0.79, 3.66), p = 0.185 (Bonf adj: 0.369)
   - Marginal probabilities: Exposed = 96.1%, Unexposed = 93.7%
-  - Risk difference = 2.3% (95% CI: -0.6%, 5.3%)
-- **Any health insurance**: OR = 1.19 (95% CI: 0.75, 1.87), p = 0.464 (Bonf adj: 0.928)
+  - Risk difference = 2.6% (95% CI: -0.6%, 5.8%)
+- **Any health insurance**: OR = 1.24 (95% CI: 0.84, 1.83), p = 0.291 (Bonf adj: 0.582)
   - Marginal probabilities: Exposed = 91.3%, Unexposed = 89.8%
-  - Risk difference = 1.5% (95% CI: -1.9%, 4.8%)
+  - Risk difference = 1.9% (95% CI: -1.6%, 5.3%)
 
-**TBI Analysis** (n = 4,736-4,740):
-- **Usual place for healthcare**: OR = 0.96 (95% CI: 0.68, 1.34), p = 0.796 (Bonf adj: 1.000)
+**TBI Analysis** (n = 4,738-4,740):
+- **Usual place for healthcare**: OR = 0.92 (95% CI: 0.66, 1.30), p = 0.654 (Bonf adj: 1.000)
   - Marginal probabilities: Exposed = 89.6%, Unexposed = 90.0%
-  - Risk difference = -0.4% (95% CI: -3.6%, 2.8%)
-- **Any health insurance**: OR = 0.94 (95% CI: 0.73, 1.20), p = 0.625 (Bonf adj: 1.000)
-  - Marginal probabilities: Exposed = 85.6%, Unexposed = 86.4%
-  - Risk difference = -0.8% (95% CI: -4.4%, 2.9%)
+  - Risk difference = -0.7% (95% CI: -3.8%, 2.4%)
+- **Any health insurance**: OR = 0.93 (95% CI: 0.74, 1.17), p = 0.547 (Bonf adj: 1.000)
+  - Marginal probabilities: Exposed = 85.6%, Unexposed = 86.5%
+  - Risk difference = -0.9% (95% CI: -4.4%, 2.7%)
 
 **Key Findings**:
-- Stroke: Positive associations (OR > 1) suggest better healthcare access among stroke survivors, consistent with hypothesis, though not statistically significant after Bonferroni adjustment
-- TBI: Negative associations (OR < 1) suggest worse healthcare access among TBI survivors, consistent with hypothesis, though not statistically significant after Bonferroni adjustment
+- Stroke: Primary outcomes remain directionally positive but statistically inconclusive after Bonferroni adjustment
+- TBI: Primary outcomes remain null in the revised 1:4 matched cohort
 - All analyses account for complex survey design and use combined NHANES and matching weights (PATT estimand)
 
 ### Matching Results
 
 **Stroke Study**:
-- **Caliper**: 0.2651 SD of logit(propensity score)
-- **1:1**: Max SMD = 0.091, 0 violations > 0.10 ✓ (4 covariates > 0.05)
-- **1:2**: Max SMD = 0.056, 0 violations > 0.10 ✓ (2 covariates > 0.05)
-- **1:3**: Max SMD = 0.039, 0 violations > 0.10 ✓ **Excellent balance**
-- **1:4**: Max SMD = 0.043, 0 violations > 0.10 ✓ **Excellent balance**
-- **1:5**: Max SMD = 0.048, 0 violations > 0.10 ✓ (0 covariates > 0.05)
-- **1:6**: Max SMD = 0.066, 0 violations > 0.10 ✓ (3 covariates > 0.05)
+- **Caliper**: 0.2652 SD of logit(propensity score)
+- **1:1**: Max SMD = 0.221, 1 violation > 0.10 (8 covariates > 0.05)
+- **1:2**: Max SMD = 0.115, 1 violation > 0.10 (5 covariates > 0.05)
+- **1:3**: Max SMD = 0.086, 0 violations > 0.10 (4 covariates > 0.05)
+- **1:4**: Max SMD = 0.057, 0 violations > 0.10 (2 covariates > 0.05)
+- **1:5**: Max SMD = 0.048, 0 violations > 0.10 (0 covariates > 0.05)
+- **1:6**: Max SMD = 0.062, 0 violations > 0.10 (3 covariates > 0.05)
 - **All treated units matched** (no discarded units)
 
 **TBI Study**:
-- **Caliper**: 0.139 SD of logit(propensity score)
-- **1:1**: Max SMD = 0.050, 0 violations > 0.10 ✓ (0 covariates > 0.05) **Excellent balance**
-- **1:2**: Max SMD = 0.049, 0 violations > 0.10 ✓ (0 covariates > 0.05) **Excellent balance**
-- **1:3**: Max SMD = 0.060, 0 violations > 0.10 ✓ (2 covariates > 0.05)
-- **1:4**: Max SMD = 0.095, 0 violations > 0.10 ✓ (3 covariates > 0.05)
-- **1:5**: Max SMD = 0.134, 3 violations > 0.10 (10.7% covariates > 0.10) ⚠️
-- **1:6**: Max SMD = 0.179, 6 violations > 0.10 (21.4% covariates > 0.10) ⚠️
+- **Caliper**: 0.1408 SD of logit(propensity score)
+- **1:1**: Max SMD = 0.295, 1 violation > 0.10 (4 covariates > 0.05)
+- **1:2**: Max SMD = 0.207, 1 violation > 0.10 (1 covariate > 0.05)
+- **1:3**: Max SMD = 0.101, 1 violation > 0.10 (2 covariates > 0.05)
+- **1:4**: Max SMD = 0.058, 0 violations > 0.10 (5 covariates > 0.05)
+- **1:5**: Max SMD = 0.115, 2 violations > 0.10 (7 covariates > 0.05)
+- **1:6**: Max SMD = 0.181, 6 violations > 0.10 (15 covariates > 0.05)
 - **All treated units matched** (no discarded units)
 
 **Key Findings**:
-- Caliper implementation successful: All treated units matched without discarding
+- Penalized caliper implementation successful: All treated units matched without discarding
 - Sample weight (WTINT2YR) included as predictor in PS model (Dugoff et al.)
-- Stroke: Excellent balance achieved at 1:3 and 1:4 ratios (max SMD < 0.05)
-- TBI: Excellent balance achieved at 1:1 and 1:2 ratios (max SMD < 0.05)
-- TBI balance degrades at higher ratios (1:5 and 1:6 exceed 0.10 threshold)
-- Smaller caliper for TBI (0.139 vs 0.2651 for stroke) reflects less variability in propensity scores
+- Stroke: 1:4 achieves good balance and remains the protocol-specified final ratio
+- Original TBI 1:4 also achieves good covariate balance, but fails the negative-control check and is not used for final outcome models
+- Revised TBI 1:4 matching is the final analytic cohort for TBI after adding marijuana ever-use to the PS model
+- Smaller caliper for TBI (0.1408 vs 0.2652 for stroke) reflects less variability in propensity scores
 
-**Balance summary (1:4 matching)** — run `code/balance_summary.R` for max |SMD| and covariates > 0.05:
+**Balance summary (1:4 matching)** — run `scripts/balance_summary.R` for max |SMD| and covariates > 0.05:
 
 | Match | Max \|SMD\| | Covariates > 0.05 |
 |-------|------------|-------------------|
-| Stroke 1:4 | 0.091 | 1 |
-| TBI 1:4 | 0.093 | 4 |
-| TBI 1:4 (incl. marijuana use) | 0.096 | 5 |
+| Stroke 1:4 | 0.057 | 2 |
+| TBI 1:4 | 0.058 | 5 |
+| TBI 1:4 (incl. marijuana use) | 0.057 | 2 |
 
-**Negative control**: Stroke passes (SMD &lt; 0.10, OR CI includes 1); TBI fails. Revised TBI matching with marijuana in the PS does not improve covariate balance.
+**Negative control**: Stroke passes (SMD = -0.021, OR 0.96, 95% CI 0.50 to 1.82); original TBI 1:4 fails (SMD = 0.141, OR 1.35, 95% CI 1.10 to 1.66). The final TBI outcome models therefore use the revised 1:4 cohort with marijuana ever-use included in the PS model.
 
 
 ## Directory Structure
 
 ```
 .
-├── code/
+├── scripts/
 │   ├── 01_data-prep.R          # Data preparation: load and merge NHANES datasets
 │   ├── 02_data-exploration.R   # Data exploration: create exposure/outcome variables, handle missingness
 │   ├── 03_matching.R           # Propensity score matching: match exposed and unexposed participants
 │   ├── 04_negative-control.R   # Negative control balance check + revised TBI matching
 │   ├── 05_analysis.R           # Outcome analysis: survey-weighted regression models
+│   ├── 06_secondary-analysis.R # Secondary healthcare access/utilization outcomes
 │   └── balance_summary.R       # Balance summary for stroke/TBI 1:4 (all 3 versions)
 ├── data/
 │   ├── clean/                  # Cleaned datasets
